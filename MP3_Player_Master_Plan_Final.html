@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 MP3 Player - Final Master Plan</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 1000px; margin: 0 auto; padding: 20px; background-color: #f5f7fa; }
+        h1, h2, h3 { color: #2c3e50; }
+        .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f8f9fa; font-weight: bold; }
+        .highlight { background-color: #e8f4f8; }
+        pre { background-color: #282c34; color: #abb2bf; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 14px; }
+        .btn { display: inline-block; background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>ESP32 MP3 Player - Final Master Plan V3</h1>
+    <p>This document contains your finalized pinout map and the complete Arduino codebase based on the physical layout you designed.</p>
+
+    <div class="card">
+        <h2>1. Power Subsystem Wiring</h2>
+        <table>
+            <tr><th>From Module</th><th>Pin</th><th>To Module</th><th>Pin</th></tr>
+            <tr><td>Battery</td><td>B+</td><td>TP4056</td><td>B+</td></tr>
+            <tr><td>Battery</td><td>B-</td><td>TP4056</td><td>B-</td></tr>
+            <tr><td>TP4056</td><td>OUT+</td><td>Boost Converter</td><td>VIN+</td></tr>
+            <tr><td>TP4056</td><td>OUT-</td><td>Common Ground</td><td>Connect to all GNDs</td></tr>
+            <tr><td>Boost Converter</td><td>VOUT+</td><td>ESP32</td><td>5V (VIN)</td></tr>
+            <tr><td>Boost Converter</td><td>VOUT+</td><td>LDO 3.3V</td><td>VIN</td></tr>
+            <tr><td>LDO 3.3V</td><td>OUT</td><td>DAC (Audio)</td><td>VIN</td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>2. Data & Signal Wiring</h2>
+        <table>
+            <tr><th>Module</th><th>Pin</th><th>ESP32 GPIO</th><th>Notes</th></tr>
+            
+            <tr class="highlight"><td colspan="4"><strong>Shared SPI Bus (Left Side)</strong></td></tr>
+            <tr><td>TFT & SD</td><td>SCK / SD_SCK</td><td><strong>P18</strong></td><td>Shared Clock</td></tr>
+            <tr><td>TFT & SD</td><td>SDA / SD_MOSI</td><td><strong>P23</strong></td><td>Shared MOSI</td></tr>
+            <tr><td>SD</td><td>SD_MISO</td><td><strong>P19</strong></td><td>MISO</td></tr>
+            <tr><td>TFT</td><td>CS</td><td><strong>P22</strong></td><td>Display Chip Select</td></tr>
+            <tr><td>SD</td><td>SD_CS</td><td><strong>P5</strong></td><td>SD Chip Select</td></tr>
+            <tr><td>TFT</td><td>RESET</td><td><strong>P17</strong></td><td>Display Reset</td></tr>
+            <tr><td>TFT</td><td>A0 (DC)</td><td><strong>P21</strong></td><td>Display Data/Command</td></tr>
+
+            <tr class="highlight"><td colspan="4"><strong>I2S Audio DAC (Right Side)</strong></td></tr>
+            <tr><td>DAC</td><td>WSEL</td><td><strong>P25</strong></td><td>Word Select / L/R Clock</td></tr>
+            <tr><td>DAC</td><td>BCLK</td><td><strong>P26</strong></td><td>Bit Clock</td></tr>
+            <tr><td>DAC</td><td>DIN</td><td><strong>P27</strong></td><td>Data In</td></tr>
+            
+            <tr class="highlight"><td colspan="4"><strong>Tactile Buttons & Battery (Right/Top Side)</strong></td></tr>
+            <tr><td>Button</td><td>PLAY</td><td><strong>P32</strong></td><td>Connect other side to GND</td></tr>
+            <tr><td>Button</td><td>NEXT</td><td><strong>P33</strong></td><td>Connect other side to GND</td></tr>
+            <tr><td>Button</td><td>PREV</td><td><strong>P14</strong></td><td>Connect other side to GND</td></tr>
+            <tr><td>Button</td><td>VOL UP</td><td><strong>P13</strong></td><td>Connect other side to GND</td></tr>
+            <tr><td>Button</td><td>VOL DOWN</td><td><strong>P12</strong></td><td>Connect other side to GND</td></tr>
+            <tr><td>Battery</td><td>Analog Volts</td><td><strong>P34</strong></td><td>Read via voltage divider</td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>3. TFT_eSPI Configuration</h2>
+        <p>Before uploading the code, ensure your <code>User_Setup.h</code> in the TFT_eSPI library looks like this:</p>
+        <pre>
+#define ST7735_DRIVER
+#define TFT_WIDTH  128
+#define TFT_HEIGHT 160
+
+#define TFT_CS   22
+#define TFT_DC   21
+#define TFT_RST  17
+#define TFT_MOSI 23
+#define TFT_SCLK 18
+#define TFT_MISO 19
+
+#define SPI_FREQUENCY 16000000
+        </pre>
+    </div>
+
+</body>
+</html>
