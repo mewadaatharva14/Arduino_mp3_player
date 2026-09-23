@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 MP3 Player Master Plan v2.0</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Prism CSS (Dark Theme) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    colors: {
+                        darker: '#09090b',
+                        dark: '#18181b',
+                        card: '#27272a',
+                        accent: '#8b5cf6', /* Purple accent for MP3 */
+                        danger: '#ef4444',
+                        success: '#22c55e',
+                        warning: '#eab308',
+                        info: '#3b82f6'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: theme('colors.darker'); color: #e4e4e7; }
+        .glass-card {
+            background-color: theme('colors.dark');
+            border: 1px solid #3f3f46;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .ascii-art {
+            font-family: 'Fira Code', monospace;
+            background-color: #000;
+            color: #c084fc; 
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid #3f3f46;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            white-space: pre;
+        }
+        .code-block-wrapper { position: relative; margin-top: 1rem; margin-bottom: 1rem; }
+        .copy-btn {
+            position: absolute; top: 0.5rem; right: 0.5rem;
+            background: #3f3f46; color: white; border: none;
+            padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 500;
+            cursor: pointer; transition: all 0.2s; z-index: 10;
+        }
+        .copy-btn:hover { background: #52525b; transform: scale(1.05); }
+        .copy-btn.copied { background: theme('colors.success'); }
+        
+        .nav-link {
+            display: block; padding: 0.75rem 1rem; border-radius: 6px;
+            color: #a1a1aa; transition: all 0.2s; font-weight: 500;
+        }
+        .nav-link:hover, .nav-link.active { background: #27272a; color: white; border-left: 3px solid theme('colors.accent'); }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #09090b; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row min-h-screen">
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-full md:w-72 bg-dark border-r border-zinc-800 p-6 md:fixed md:h-screen overflow-y-auto z-20">
+        <h2 class="text-xl font-bold text-white mb-8 flex items-center gap-3">
+            <i class="fa-solid fa-music text-accent text-2xl"></i> Master Plan v2.0
+        </h2>
+        <nav class="space-y-2">
+            <a href="#logic" class="nav-link"><i class="fa-solid fa-brain w-6 text-center text-orange-400"></i> Hardware Logic</a>
+            <a href="#architecture" class="nav-link"><i class="fa-solid fa-sitemap w-6 text-center text-blue-400"></i> Architecture</a>
+            <a href="#pins" class="nav-link"><i class="fa-solid fa-microchip w-6 text-center text-emerald-400"></i> Pin Mapping</a>
+            <a href="#wiring" class="nav-link"><i class="fa-solid fa-network-wired w-6 text-center text-yellow-400"></i> Schematic</a>
+            <a href="#code" class="nav-link"><i class="fa-solid fa-code w-6 text-center text-purple-400"></i> Core Firmware</a>
+        </nav>
+        <div class="mt-12 p-4 bg-darker rounded-lg border border-zinc-800 text-xs text-zinc-500 text-center">
+            Updated for 1.8" Color TFT & UDA1334A DAC
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-6 md:pl-[19rem] max-w-7xl mx-auto w-full">
+        
+        <header class="mb-12 pt-8">
+            <div class="inline-block px-3 py-1 bg-accent/10 border border-accent/20 text-accent rounded-full text-sm font-semibold mb-4">
+                Full System Architecture
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">The Ultimate <span class="text-transparent bg-clip-text bg-gradient-to-r from-accent to-pink-500">Hi-Fi MP3 Player</span></h1>
+            <p class="text-xl text-zinc-400">Bulletproof logic, flawless power routing, and robust code for a high-end portable build.</p>
+        </header>
+
+        <!-- The Hard Logic / Reasoning -->
+        <section id="logic" class="glass-card scroll-mt-20 border-l-4 border-l-orange-500">
+            <h2 class="text-2xl font-semibold text-white mb-6"><i class="fa-solid fa-brain text-orange-500 mr-2"></i> System Foundation</h2>
+            <p class="text-zinc-300 mb-6">Based on your exact purchased modules, we have adapted the architecture to support your awesome color screen!</p>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Reality Check 1: Power -->
+                <div class="bg-darker border border-zinc-800 p-5 rounded-lg">
+                    <h3 class="text-lg font-bold text-danger mb-2"><i class="fa-solid fa-battery-quarter mr-2"></i> The Missing 5V Boost Converter</h3>
+                    <p class="text-sm text-zinc-400 mb-3">You bought a TP4056 and an AMS1117-3.3V, but you are <strong>missing a 5V Boost Converter</strong> to step up the battery voltage.</p>
+                    <p class="text-sm text-zinc-400">A LiPo battery drops from 4.2V down to 3.0V. The ESP32 5V pin needs a solid 5V. If you try to power the ESP32 or the AMS1117-3.3V module directly from the battery, the regulators will drop the voltage by another ~1.1V, resulting in a dead 2.6V system.</p>
+                    <div class="mt-4 p-3 bg-danger/10 border border-danger/30 rounded text-danger text-sm font-semibold">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Action Required
+                        <p class="text-zinc-400 font-normal mt-1">You must acquire an <strong>MT3608 5V Boost Converter</strong> module. The battery connects to the TP4056, the TP4056 connects to the MT3608, and the MT3608 outputs a rock-solid 5V to the ESP32 VIN.</p>
+                    </div>
+                </div>
+
+                <!-- Reality Check 2: Audio & TFT -->
+                <div class="bg-darker border border-zinc-800 p-5 rounded-lg">
+                    <h3 class="text-lg font-bold text-info mb-2"><i class="fa-solid fa-tv mr-2"></i> SPI TFT & UDA1334A Audio</h3>
+                    <p class="text-sm text-zinc-400 mb-3">You purchased a <strong>1.8" Color TFT</strong> instead of a basic OLED. This is awesome! We will put it on the same SPI bus as the SD card to save pins.</p>
+                    <p class="text-sm text-zinc-400">You also purchased the <strong>UDA1334A I2S DAC</strong>. This is a brilliant chip. The ESP32 streams pure digital audio to it via I2S, and it decodes it for your wired headphones perfectly.</p>
+                    <div class="mt-4 p-3 bg-info/10 border border-info/30 rounded text-info text-sm font-semibold">
+                        <i class="fa-solid fa-check-circle mr-1"></i> Perfect Match
+                        <p class="text-zinc-400 font-normal mt-1">We will share the SPI SCK and MOSI pins between the SD card and the TFT, but they will each get their own dedicated CS (Chip Select) pins.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pin Mapping -->
+        <section id="pins" class="glass-card scroll-mt-20">
+            <h2 class="text-2xl font-semibold text-white mb-6 border-b border-zinc-700 pb-3"><i class="fa-solid fa-microchip text-emerald-400 mr-2"></i> Master Pin Allocation</h2>
+            <p class="text-zinc-400 mb-6">Carefully selected to avoid all strapping pin conflicts (GPIO 0, 2, 12, 15) and properly share the SPI bus.</p>
+
+            <div class="overflow-x-auto rounded-lg border border-zinc-800 shadow-lg">
+                <table class="w-full text-left text-zinc-300 border-collapse bg-zinc-900/50">
+                    <thead>
+                        <tr class="bg-zinc-800/80 text-white border-b border-zinc-700">
+                            <th class="py-3 px-4 font-semibold">Subsystem</th>
+                            <th class="py-3 px-4 font-semibold">Module Pin</th>
+                            <th class="py-3 px-4 font-semibold">ESP32 GPIO</th>
+                            <th class="py-3 px-4 font-semibold">Why this pin?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- SPI BUS (Shared) -->
+                        <tr class="border-b border-zinc-800/50"><td rowspan="2" class="py-3 px-4 font-medium text-orange-400 align-top">Shared SPI Bus</td><td class="py-2 px-4">SCK (SD & TFT)</td><td class="py-2 px-4 font-mono text-white">18</td><td class="py-2 px-4 text-sm text-zinc-500">Default VSPI SCK</td></tr>
+                        <tr class="border-b border-zinc-800/50"><td class="py-2 px-4">MOSI (SD & TFT)</td><td class="py-2 px-4 font-mono text-white">23</td><td class="py-2 px-4 text-sm text-zinc-500">Default VSPI MOSI</td></tr>
+
+                        <!-- SD Card Specific -->
+                        <tr class="border-b border-zinc-800/50"><td rowspan="2" class="py-3 px-4 font-medium text-blue-400 align-top">SD Card Specific</td><td class="py-2 px-4">MISO</td><td class="py-2 px-4 font-mono text-white">19</td><td class="py-2 px-4 text-sm text-zinc-500">Default VSPI MISO (Pull-up needed)</td></tr>
+                        <tr class="border-b border-zinc-800"><td class="py-2 px-4">SD CS</td><td class="py-2 px-4 font-mono text-white">5</td><td class="py-2 px-4 text-sm text-zinc-500">Dedicated Chip Select for SD</td></tr>
+                        
+                        <!-- TFT Specific -->
+                        <tr class="border-b border-zinc-800/50"><td rowspan="3" class="py-3 px-4 font-medium text-indigo-400 align-top">TFT Specific (ST7735)</td><td class="py-2 px-4">TFT CS</td><td class="py-2 px-4 font-mono text-white">21</td><td class="py-2 px-4 text-sm text-zinc-500">Dedicated Chip Select for TFT</td></tr>
+                        <tr class="border-b border-zinc-800/50"><td class="py-2 px-4">TFT RS / DC</td><td class="py-2 px-4 font-mono text-white">2</td><td class="py-2 px-4 text-sm text-zinc-500">Data/Command pin</td></tr>
+                        <tr class="border-b border-zinc-800"><td class="py-2 px-4">TFT RESET</td><td class="py-2 px-4 font-mono text-white">4</td><td class="py-2 px-4 text-sm text-zinc-500">Reset pin (or tie to ESP32 EN)</td></tr>
+
+                        <!-- DAC -->
+                        <tr class="border-b border-zinc-800/50"><td rowspan="3" class="py-3 px-4 font-medium text-pink-400 align-top">I2S DAC (UDA1334A)</td><td class="py-2 px-4">BCLK</td><td class="py-2 px-4 font-mono text-white">26</td><td class="py-2 px-4 text-sm text-zinc-500">Standard I2S Clock</td></tr>
+                        <tr class="border-b border-zinc-800/50"><td class="py-2 px-4">WSEL (LRC)</td><td class="py-2 px-4 font-mono text-white">25</td><td class="py-2 px-4 text-sm text-zinc-500">Standard I2S L/R Sync</td></tr>
+                        <tr class="border-b border-zinc-800"><td class="py-2 px-4">DIN (Data)</td><td class="py-2 px-4 font-mono text-white">22</td><td class="py-2 px-4 text-sm text-zinc-500">Standard I2S Data</td></tr>
+
+                        <!-- Buttons -->
+                        <tr class="border-b border-zinc-800/50"><td rowspan="3" class="py-3 px-4 font-medium text-emerald-400 align-top">Navigation Buttons</td><td class="py-2 px-4">Play / Pause</td><td class="py-2 px-4 font-mono text-white">32</td><td class="py-2 px-4 text-sm text-zinc-500">Has internal pull-up</td></tr>
+                        <tr class="border-b border-zinc-800/50"><td class="py-2 px-4">Next / Vol Up</td><td class="py-2 px-4 font-mono text-white">33</td><td class="py-2 px-4 text-sm text-zinc-500">Has internal pull-up</td></tr>
+                        <tr><td class="py-2 px-4">Prev / Vol Down</td><td class="py-2 px-4 font-mono text-white">27</td><td class="py-2 px-4 text-sm text-zinc-500">Has internal pull-up</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- System Schematic -->
+        <section id="wiring" class="glass-card scroll-mt-20">
+            <h2 class="text-2xl font-semibold text-white mb-6 border-b border-zinc-700 pb-3"><i class="fa-solid fa-network-wired text-yellow-400 mr-2"></i> Full System Schematic</h2>
+            
+            <div class="ascii-art shadow-lg mb-6 custom-scrollbar text-zinc-300 bg-[#0f111a] !border-zinc-800">
+<span class="text-emerald-400 font-bold">POWER SUB-SYSTEM (REQUIRES BOOST CONVERTER)</span>
+================================================================
+
+ ┌─────────┐      ┌─────────────┐       ┌─────────────┐
+ │ 3.7V    │      │ TP4056      │       │ MT3608 5V   │ ◄── MISSING FROM PURCHASE LIST!
+ │ LiPo    ├─(+)-►│ B+     OUT+ ├─(SW)─►│ VIN    VOUT ├─(+5V)─► To ESP32 'VIN' Pin
+ │ Battery │      │             │       │ Boost       │         To SD Module 'VCC' Pin
+ │         ├─(-)-►│ B-     OUT- ├──────►│ GND     GND ├─(GND)─► To Common Ground
+ └─────────┘      └─────────────┘       └─────────────┘
+
+
+<span class="text-blue-400 font-bold">DATA / PERIPHERAL WIRING</span>
+================================================================
+
+ <span class="text-white font-bold">ESP32 38-Pin</span>       <span class="text-purple-300 font-bold">SD MODULE (SPI)</span>    <span class="text-indigo-300 font-bold">1.8" TFT LCD (SPI)</span>
+ ────────────       ───────────────    ──────────────────
+ GPIO 18    ──────► SCK ──────────────► SCK
+ GPIO 23    ──────► MOSI ─────────────► SDA (MOSI on TFT)
+ GPIO 19    ──┬───► MISO                (TFT doesn't send data back)
+              │
+           [10kΩ] (Pull-up resistor to ESP32 3.3V)
+ 
+ GPIO 5     ──────► CS
+ GPIO 21    ──────────────────────────► CS
+ GPIO 2     ──────────────────────────► A0 / RS / DC
+ GPIO 4     ──────────────────────────► RESET (Or connect to ESP32 EN)
+ 3.3V       ──────────────────────────► VCC & LED (TFT power/backlight)
+
+
+ <span class="text-white font-bold">ESP32 38-Pin</span>       <span class="text-pink-300 font-bold">I2S DAC (UDA1334A)</span>
+ ────────────       ────────────────────────────────────
+ GPIO 26    ──────► BCLK
+ GPIO 25    ──────► WSEL
+ GPIO 22    ──────► DIN
+ 3.3V       ──────► VIN
+ GND        ──────► GND
+
+
+ <span class="text-white font-bold">BUTTON WIRING</span> (Connect other side of all buttons to GND)
+ ────────────
+ GPIO 32 ──────► Play / Pause Button
+ GPIO 33 ──────► Next Track Button
+ GPIO 27 ──────► Prev Track Button
+            </div>
+        </section>
+
+        <!-- Core Firmware -->
+        <section id="code" class="glass-card scroll-mt-20">
+            <h2 class="text-2xl font-semibold text-white mb-6 border-b border-zinc-700 pb-3"><i class="fa-solid fa-code text-accent mr-2"></i> The v2.0 Core Firmware</h2>
+            
+            <p class="text-zinc-300 mb-2">Updated for the 1.8" TFT (Adafruit_ST7735) sharing the SPI bus with the SD card.</p>
+            
+            <div class="mb-4 bg-darker p-4 rounded-lg border border-zinc-800 text-sm text-zinc-400">
+                <strong>Required Arduino Libraries:</strong><br>
+                1. <code>ESP32-audioI2S</code> (by schreibfaul1)<br>
+                2. <code>Adafruit ST7735 and ST7789 Library</code><br>
+                3. <code>Adafruit GFX Library</code>
+            </div>
+
+            <div class="code-block-wrapper shadow-lg rounded-lg border border-zinc-700 overflow-hidden">
+<pre class="!m-0 !rounded-none max-h-[600px] overflow-y-auto custom-scrollbar"><code class="language-cpp">/*
+ * DIY Hi-Fi Portable MP3 Player - v2.0 Core System (TFT Edition)
+ * Board: ESP32 Dev Module (WROOM-32)
+ */
+
+#include &lt;Arduino.h&gt;
+#include &lt;WiFi.h&gt;
+#include "SPI.h"
+#include "SD.h"
+#include "Adafruit_GFX.h"
+#include "Adafruit_ST7735.h"
+#include "Audio.h" // ESP32-audioI2S library
+
+// --- PIN DEFINITIONS ---
+// Shared SPI
+#define SPI_SCK        18
+#define SPI_MOSI       23
+#define SPI_MISO       19
+
+// SD Card
+#define SD_CS          5
+
+// TFT Screen
+#define TFT_CS         21
+#define TFT_DC         2
+#define TFT_RST        4
+
+// I2S DAC (UDA1334A)
+#define I2S_BCLK       26
+#define I2S_LRC        25
+#define I2S_DOUT       22
+
+// Buttons (Active LOW)
+#define BTN_PLAYPAUSE  32
+#define BTN_NEXT       33
+#define BTN_PREV       27
+
+// --- GLOBALS ---
+Audio audio;
+Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_MOSI, SPI_SCK, TFT_RST);
+int volume = 15; // 0 to 21
+bool isPlaying = false;
+unsigned long lastButtonPress = 0;
+
+void setup() {
+    Serial.begin(115200);
+    WiFi.mode(WIFI_OFF); // Save battery, prevent static
+
+    // 1. Initialize Buttons
+    pinMode(BTN_PLAYPAUSE, INPUT_PULLUP);
+    pinMode(BTN_NEXT, INPUT_PULLUP);
+    pinMode(BTN_PREV, INPUT_PULLUP);
+
+    // 2. Initialize SPI & TFT
+    SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI, TFT_CS); // Initialize SPI bus
+    tft.initR(INITR_BLACKTAB); // Init ST7735S chip
+    tft.setRotation(1); // Landscape
+    tft.fillScreen(ST77XX_BLACK);
+    
+    tft.setTextColor(ST77XX_WHITE);
+    tft.setTextSize(1);
+    tft.setCursor(10, 20);
+    tft.println("Booting System...");
+
+    // 3. Initialize SD Card
+    // Important: Re-assign CS pin for SD card on the same SPI bus
+    if(!SD.begin(SD_CS, SPI, 4000000)) {
+        Serial.println("SD Card Mount Failed!");
+        tft.setTextColor(ST77XX_RED);
+        tft.setCursor(10, 40);
+        tft.println("SD Error! Check wiring.");
+        while(1);
+    }
+
+    // 4. Initialize Audio
+    audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
+    audio.setVolume(volume);
+
+    // Play first track (Example)
+    audio.connecttoFS(SD, "/track1.mp3");
+    isPlaying = true;
+
+    updateDisplay("track1.mp3");
+}
+
+void loop() {
+    // 1. Audio Processing (Must be called constantly)
+    audio.loop();
+
+    // 2. Handle Buttons
+    if (millis() - lastButtonPress &gt; 250) {
+        if (digitalRead(BTN_PLAYPAUSE) == LOW) {
+            audio.pauseResume();
+            isPlaying = !isPlaying;
+            updateDisplay("track1.mp3");
+            lastButtonPress = millis();
+        }
+    }
+}
+
+// --- HELPER FUNCTIONS ---
+void updateDisplay(String trackName) {
+    tft.fillScreen(ST77XX_BLACK);
+    
+    // Status Bar
+    tft.fillRect(0, 0, 160, 15, ST77XX_BLUE);
+    tft.setTextColor(ST77XX_WHITE);
+    tft.setCursor(5, 4);
+    tft.print("Vol: "); tft.print(volume);
+    
+    // Track Info
+    tft.setTextColor(ST77XX_CYAN);
+    tft.setTextSize(1);
+    tft.setCursor(5, 30);
+    tft.println("Now Playing:");
+    
+    tft.setTextColor(ST77XX_WHITE);
+    tft.setTextSize(2);
+    tft.setCursor(5, 45);
+    tft.println(trackName.substring(0, 10)); 
+    
+    // Play/Pause icon
+    tft.setTextSize(1);
+    tft.setCursor(5, 90);
+    if(isPlaying) {
+        tft.setTextColor(ST77XX_GREEN);
+        tft.print(" [ &gt; PLAYING ]");
+    } else {
+        tft.setTextColor(ST77XX_YELLOW);
+        tft.print(" [ || PAUSED ]");
+    }
+}
+
+// Callbacks
+void audio_info(const char *info){ Serial.println(info); }
+</code></pre>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
+    
+    <script>
+        // Copy to clipboard functionality
+        document.querySelectorAll('.code-block-wrapper').forEach(wrapper => {
+            const pre = wrapper.querySelector('pre');
+            const code = pre.querySelector('code');
+            
+            const btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.innerHTML = '<i class="fa-regular fa-copy mr-1"></i> Copy';
+            
+            btn.addEventListener('click', () => {
+                navigator.clipboard.writeText(code.innerText).then(() => {
+                    btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Copied!';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.innerHTML = '<i class="fa-regular fa-copy mr-1"></i> Copy';
+                        btn.classList.remove('copied');
+                    }, 2000);
+                });
+            });
+            
+            wrapper.appendChild(btn);
+        });
+
+        // Intersection Observer for Active Nav Links
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    navLinks.forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === '#' + entry.target.id) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => observer.observe(section));
+    </script>
+</body>
+</html>

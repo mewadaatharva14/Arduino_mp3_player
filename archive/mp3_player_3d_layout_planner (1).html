@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>MP3 Player — 3D Layout & Wiring Planner</title>
+<style>
+  :root{
+    --bg:#0b0f14; --panel:rgba(18,23,29,.95); --panel2:rgba(18,23,29,.88); --border:#2a323c;
+    --text:#dfe6ee; --muted:#8792a0; --accent:#5aa9ff; --good:#3ecf8e; --warn:#e0a83e; --bad:#e0605a;
+    --gnd:#7a8494; --pwr:#e0605a; --sig:#5aa9ff;
+  }
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);
+    font-family:-apple-system,"Segoe UI",system-ui,sans-serif;color:var(--text);font-size:14px;}
+  #app{position:fixed;inset:0;}
+  .panel{position:fixed;background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    backdrop-filter:blur(10px);box-shadow:0 12px 34px rgba(0,0,0,.55);z-index:10;}
+  #ui{top:14px;left:14px;width:280px;padding:14px 16px;max-height:calc(100vh - 28px);overflow:auto;}
+  #ui h1{font-size:14px;margin:0 0 2px;color:var(--accent);font-weight:600;}
+  #ui .sub{font-size:11.5px;color:var(--muted);margin-bottom:12px;line-height:1.5;}
+  .row{margin:11px 0;}
+  label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:5px;}
+  select{width:100%;background:#0b0f14;color:var(--text);border:1px solid var(--border);
+    border-radius:6px;padding:7px 8px;font-size:13px;outline:none;}
+  input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;}
+  .valr{float:right;color:var(--text);font-weight:600;}
+  #selName{font-size:13.5px;font-weight:600;color:var(--good);margin-bottom:2px;}
+  #posRead{font-size:11.5px;color:var(--muted);font-family:ui-monospace,Consolas,monospace;margin-top:5px;}
+  .hint{margin-top:12px;padding-top:11px;border-top:1px solid var(--border);
+    font-size:11.5px;line-height:1.7;color:var(--muted);}
+  .hint b{color:var(--text);font-weight:600;}
+  label.chk{display:flex;align-items:center;gap:7px;cursor:pointer;color:var(--text);font-size:12.5px;}
+  label.chk input{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;}
+  .btnrow{display:flex;gap:8px;margin-top:4px;}
+  button{background:#151b23;color:var(--text);border:1px solid var(--border);border-radius:6px;
+    padding:8px 10px;font-size:12.5px;cursor:pointer;flex:1;}
+  button:hover{border-color:var(--accent);color:var(--accent);}
+  button.primary{background:#1a3350;border-color:#2c5a8a;color:#bfe0ff;}
+  button.primary:hover{background:#204064;}
+  button.danger:hover{border-color:var(--bad);color:var(--bad);}
+
+  #tooltip{position:fixed;display:none;pointer-events:none;z-index:30;
+    background:rgba(11,15,20,.97);border:1px solid var(--accent);border-radius:6px;
+    padding:7px 10px;font-size:12px;font-family:ui-monospace,Consolas,monospace;white-space:nowrap;
+    box-shadow:0 4px 16px rgba(0,0,0,.6);}
+  #tooltip .m{color:var(--accent);font-weight:700;}
+  #tooltip .p{color:var(--good);font-weight:700;}
+  #tooltip .w{color:var(--warn);}
+  #tooltip .d{color:var(--muted);}
+
+  #labelLayer{position:absolute;top:0;left:0;pointer-events:none;}
+  .pin-label{font-family:ui-monospace,Consolas,monospace;font-size:8.5px;font-weight:700;
+    white-space:nowrap;pointer-events:none;text-shadow:-1px 0 #05070a,1px 0 #05070a,0 -1px #05070a,0 1px #05070a,0 0 4px #05070a;
+    letter-spacing:.2px;}
+  .pin-label.GND{color:#c7ccd4;}
+  .pin-label.PWR{color:#ff8f88;}
+  .pin-label.SIGNAL{color:#9cd0ff;}
+  .pin-label.unused{opacity:.5;font-style:italic;}
+
+  #wires{top:14px;right:14px;width:320px;padding:14px 16px;max-height:56vh;overflow:auto;}
+  #wires h2{font-size:13px;margin:0 0 8px;color:var(--accent);font-weight:600;}
+  #connectHint{font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:8px;}
+  #connectHint.active{color:var(--good);}
+  .conn{display:flex;align-items:center;gap:8px;padding:7px 8px;border:1px solid var(--border);
+    border-radius:7px;margin-bottom:6px;font-size:12px;}
+  .conn .lbl{flex:1;line-height:1.4;}
+  .conn .lbl b{color:var(--text);}
+  .conn .len{font-family:ui-monospace,Consolas,monospace;white-space:nowrap;}
+  .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:5px;}
+  .tag.ok{background:#123322;color:var(--good);}
+  .tag.tight{background:#3a2f10;color:var(--warn);}
+  .tag.long{background:#3a2f10;color:var(--warn);}
+  .tag.toolong{background:#3a1414;color:var(--bad);}
+  .conn button{flex:none;padding:4px 8px;font-size:11px;}
+  #warnings{margin-top:4px;}
+  #warnings .wline{font-size:11.5px;color:var(--warn);padding:4px 0;border-top:1px dashed var(--border);}
+
+  #bottombar{bottom:14px;left:14px;right:14px;padding:10px 14px;display:flex;gap:10px;
+    align-items:center;justify-content:space-between;}
+  #bottombar .legend{display:flex;gap:16px;font-size:11.5px;color:var(--muted);flex-wrap:wrap;}
+  #bottombar .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  #bottombar .actions{display:flex;gap:8px;}
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="ui" class="panel">
+  <h1>MP3 Player — 3D Layout Planner</h1>
+  <div class="sub">1 unit = 1 mm · grid = 10 mm · click a pin, then a second pin, to wire them</div>
+
+  <div class="row">
+    <label>Selected module</label>
+    <div id="selName">None — click a module</div>
+    <div id="posRead"></div>
+  </div>
+
+  <div class="row">
+    <label>Jump to module</label>
+    <select id="moduleSelect"><option value="">— choose —</option></select>
+  </div>
+
+  <div class="row">
+    <label>Stack height (Y) <span class="valr" id="zVal">0 mm</span></label>
+    <input type="range" id="zSlider" min="-10" max="40" step="0.5" value="0">
+  </div>
+
+  <div class="row">
+    <label>Rotation (Y axis) <span class="valr" id="rotVal">0°</span></label>
+    <input type="range" id="rotSlider" min="0" max="360" step="1" value="0">
+  </div>
+
+  <div class="row">
+    <label class="chk"><input type="checkbox" id="snapChk" checked>
+      Snap to 2.54 mm perf grid</label>
+  </div>
+  <div class="row">
+    <label class="chk"><input type="checkbox" id="wireChk" checked>
+      Show wires</label>
+  </div>
+  <div class="row">
+    <label class="chk"><input type="checkbox" id="labelChk" checked>
+      Show pin names on the board</label>
+  </div>
+
+  <div class="hint">
+    <b>Drag</b> a module — it follows the cursor 1:1, same on mouse or trackpad<br>
+    <b>Arrow keys</b> nudge 1&nbsp;mm (Shift = 0.25&nbsp;mm) &middot; <b>R</b> rotate 90&deg;<br>
+    <b>Left-drag</b> orbit &middot; <b>Shift+drag (or right/middle-drag)</b> pan the view<br>
+    <b>Scroll / pinch</b> zoom<br>
+    <b>Click a pin</b> to start a wire, click a second pin to finish &middot; <b>Esc</b> cancels
+  </div>
+</div>
+
+<div id="wires" class="panel">
+  <h2>Connections</h2>
+  <div id="connectHint">Click any pin to start wiring.</div>
+  <div id="connList"></div>
+  <div id="warnings"></div>
+</div>
+
+<div id="bottombar" class="panel">
+  <div class="legend">
+    <span><span class="dot" style="background:#7a8494"></span> GND</span>
+    <span><span class="dot" style="background:#e0605a"></span> Power</span>
+    <span><span class="dot" style="background:#5aa9ff"></span> Signal</span>
+    <span><span class="dot" style="background:#e0a83e"></span> tight / long wire</span>
+    <span><span class="dot" style="background:#e0605a"></span> too long / not-in-use</span>
+  </div>
+  <div class="actions">
+    <button id="loadBtn">Load layout…</button>
+    <button id="saveBtn" class="primary">Save layout (.json)</button>
+  </div>
+</div>
+<input type="file" id="fileInput" accept="application/json" style="display:none">
+
+<div id="tooltip"></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+/* ============================================================
+   PIN DATA — taken from mp3_player_3d_layout_specifications.md
+   coord: 'exact' (mm value given in the spec) or 'even'
+   (spec only gives pin order for that module, so pins are
+   spread evenly along the edge — flagged as such in export).
+   dir: how the pin/pad sits relative to the board body.
+     'down'    through-hole pin under the board, pointing -Y
+     'pad-top' solder pad flush with the top (component) face
+     'out'     right-angle header pointing horizontally outward
+     'lead'    a wire lead exiting the board edge
+   ============================================================ */
+
+function spread(n, len, margin=3){
+  const out=[];
+  for(let i=0;i<n;i++){
+    const t = n===1 ? 0.5 : i/(n-1);
+    out.push(-len/2 + margin + t*(len-2*margin));
+  }
+  return out;
+}
+
+const MODULES = [
+  {
+    id:'esp32', name:'ESP32 38-Pin DevKit (CP2102, Type-C)',
+    w:25, d:50, h:1.6, color:0x1f8a4c, layer:'Middle',
+    x:-75, y:12, z:-45, rotDeg:0,
+    pinGroups:[
+      { edge:'left', dir:'down', coord:'exact',
+        items:[
+          {label:'CLK',gpio:6,y:2.14,status:'caution',note:'Internal flash — do not use'},
+          {label:'SD0',gpio:7,y:4.68,status:'caution',note:'Internal flash — do not use'},
+          {label:'SD1',gpio:8,y:7.22,status:'caution',note:'Internal flash — do not use'},
+          {label:'P15',gpio:15,y:9.76,status:'ok',note:'Strapping pin'},
+          {label:'P2',gpio:2,y:12.30,status:'ok',note:'Strapping pin'},
+          {label:'P0',gpio:0,y:14.84,status:'caution',note:'Strapping pin, BOOT button'},
+          {label:'P4',gpio:4,y:17.38,status:'ok',note:''},
+          {label:'P16',gpio:16,y:19.92,status:'ok',note:''},
+          {label:'P17',gpio:17,y:22.46,status:'ok',note:''},
+          {label:'P5',gpio:5,y:25.00,status:'ok',note:'Strapping pin — used as SD CS'},
+          {label:'P18',gpio:18,y:27.54,status:'ok',note:'VSPI SCK'},
+          {label:'P19',gpio:19,y:30.08,status:'ok',note:'VSPI MISO'},
+          {label:'GND',gpio:null,y:32.62,status:'ok',note:'Ground'},
+          {label:'P21',gpio:21,y:35.16,status:'ok',note:'I2C SDA default'},
+          {label:'RX',gpio:3,y:37.70,status:'ok',note:'UART0 RX'},
+          {label:'TX',gpio:1,y:40.24,status:'ok',note:'UART0 TX'},
+          {label:'P22',gpio:22,y:42.78,status:'ok',note:'I2C SCL default'},
+          {label:'P23',gpio:23,y:45.32,status:'ok',note:'VSPI MOSI'},
+          {label:'GND',gpio:null,y:47.86,status:'ok',note:'Ground'},
+        ]},
+      { edge:'right', dir:'down', coord:'exact',
+        items:[
+          {label:'5V',gpio:null,y:2.14,status:'ok',note:'5V in/out (VIN)'},
+          {label:'GND',gpio:null,y:4.68,status:'caution',note:'Verify with continuity test'},
+          {label:'SD3',gpio:10,y:7.22,status:'caution',note:'Internal flash — do not use'},
+          {label:'SD2',gpio:9,y:9.76,status:'caution',note:'Internal flash — do not use'},
+          {label:'P13',gpio:13,y:12.30,status:'ok',note:''},
+          {label:'GND',gpio:null,y:14.84,status:'ok',note:'Ground'},
+          {label:'P12',gpio:12,y:17.38,status:'caution',note:'Strapping pin'},
+          {label:'P14',gpio:14,y:19.92,status:'ok',note:''},
+          {label:'P27',gpio:27,y:22.46,status:'ok',note:''},
+          {label:'P26',gpio:26,y:25.00,status:'ok',note:''},
+          {label:'P25',gpio:25,y:27.54,status:'ok',note:''},
+          {label:'P33',gpio:33,y:30.08,status:'ok',note:''},
+          {label:'P32',gpio:32,y:32.62,status:'ok',note:''},
+          {label:'P35',gpio:35,y:35.16,status:'caution',note:'Input only'},
+          {label:'P34',gpio:34,y:37.70,status:'caution',note:'Input only'},
+          {label:'VN',gpio:39,y:40.24,status:'caution',note:'Input only (SVN)'},
+          {label:'VP',gpio:36,y:42.78,status:'caution',note:'Input only (SVP)'},
+          {label:'EN',gpio:null,y:45.32,status:'ok',note:'Reset / enable'},
+          {label:'3V3',gpio:null,y:47.86,status:'ok',note:'3.3V out'},
+        ]},
+    ],
+    decorate(g){
+      const shield = new THREE.Mesh(new THREE.BoxGeometry(15,1.6,21),
+        new THREE.MeshStandardMaterial({color:0xb8bfc7, metalness:.85, roughness:.35}));
+      shield.position.set(0,1.6,5); g.add(shield);
+      const usb = new THREE.Mesh(new THREE.BoxGeometry(9,3,4),
+        new THREE.MeshStandardMaterial({color:0xc7ccd4, metalness:.8, roughness:.3}));
+      usb.position.set(0,1.2,-27); g.add(usb);
+      // antenna keep-clear zone (spec: far end of module, keep clear of metal/battery/wires)
+      const keep = new THREE.Mesh(new THREE.BoxGeometry(15,0.3,8),
+        new THREE.MeshBasicMaterial({color:0xff5555, transparent:true, opacity:.18}));
+      keep.position.set(0,1.65,21.5); g.add(keep);
+      g.userData.keepOutWorld = ()=>{ const v=new THREE.Vector3(0,1.65,21.5); g.localToWorld(v); return {c:v, r:9}; };
+    }
+  },
+
+  {
+    id:'tft', name:'1.8" Color TFT LCD Screen',
+    w:33, d:58, h:1.6, color:0xb71c1c, layer:'Top',
+    x:0, y:24, z:-50, rotDeg:0,
+    pinGroups:[
+      { edge:'left', dir:'pad-top', coord:'even',
+        items:[
+          {label:'LED',gpio:null,status:'ok',note:'Backlight power (3.3V/5V)'},
+          {label:'SCK',gpio:null,status:'ok',note:'SPI clock'},
+          {label:'SDA',gpio:null,status:'ok',note:'SPI data (MOSI)'},
+          {label:'A0',gpio:null,status:'ok',note:'Data/command (DC)'},
+          {label:'RESET',gpio:null,status:'ok',note:'Display reset'},
+          {label:'CS',gpio:null,status:'ok',note:'Display chip select'},
+          {label:'GND',gpio:null,status:'ok',note:'Ground'},
+          {label:'VCC',gpio:null,status:'ok',note:'System power (3.3V/5V)'},
+        ]},
+      { edge:'right', dir:'pad-top', coord:'even',
+        items:[
+          {label:'SD_CS',gpio:null,status:'ok',note:'SD chip select'},
+          {label:'SD_MOSI',gpio:null,status:'ok',note:'SD SPI data in'},
+          {label:'SD_MISO',gpio:null,status:'ok',note:'SD SPI data out'},
+          {label:'SD_SCK',gpio:null,status:'ok',note:'SD SPI clock'},
+        ]},
+    ],
+    decorate(g){
+      const screen = new THREE.Mesh(new THREE.BoxGeometry(27,0.7,36),
+        new THREE.MeshStandardMaterial({color:0x0a0f14, roughness:.15, metalness:.4}));
+      screen.position.set(0,2.0,-6); g.add(screen);
+    }
+  },
+
+  {
+    id:'sdReader', name:'Micro SD Card Reader Module (separate)',
+    w:22, d:42, h:1.6, color:0x1565c0, layer:'Flexible',
+    x:60, y:12, z:-45, rotDeg:0,
+    pinGroups:[
+      { edge:'left', dir:'down', coord:'even',
+        items:[
+          {label:'CS',gpio:null,status:'ok',note:'SPI chip select'},
+          {label:'SCK',gpio:null,status:'ok',note:'SPI clock'},
+          {label:'MOSI',gpio:null,status:'ok',note:'SPI MOSI'},
+          {label:'MISO',gpio:null,status:'ok',note:'SPI MISO'},
+          {label:'VCC',gpio:null,status:'ok',note:'5V / 3.3V supply'},
+          {label:'GND',gpio:null,status:'ok',note:'Ground'},
+        ]},
+    ],
+    decorate(g){
+      const slot = new THREE.Mesh(new THREE.BoxGeometry(14,2.2,18),
+        new THREE.MeshStandardMaterial({color:0x9aa3ad, metalness:.85, roughness:.3}));
+      slot.position.set(0,1.9,-8); g.add(slot);
+    }
+  },
+
+  {
+    id:'dac', name:'UDA1334A I2S DAC (Audio Module)',
+    w:36, d:25, h:1.6, color:0x5e35b1, layer:'Flexible',
+    x:-75, y:12, z:35, rotDeg:0,
+    pinGroups:[
+      { edge:'top', dir:'pad-top', coord:'even',
+        items:[
+          {label:'SCLK',gpio:null,status:'ok',note:'System clock (optional)'},
+          {label:'SF1',gpio:null,status:'ok',note:'Format select bit 1'},
+          {label:'MUTE',gpio:null,status:'ok',note:'High = mute'},
+          {label:'SF0',gpio:null,status:'ok',note:'Format select bit 0'},
+          {label:'PLL',gpio:null,status:'ok',note:'PLL control'},
+          {label:'DEEM',gpio:null,status:'ok',note:'De-emphasis filter'},
+        ]},
+      { edge:'bottom', dir:'pad-top', coord:'even',
+        items:[
+          {label:'VIN',gpio:null,status:'ok',note:'3.3–5V power in'},
+          {label:'3VO',gpio:null,status:'ok',note:'Regulated 3.3V out'},
+          {label:'GND',gpio:null,status:'ok',note:'Ground'},
+          {label:'WSEL',gpio:null,status:'ok',note:'Word select / LRCLK'},
+          {label:'DIN',gpio:null,status:'ok',note:'Serial data in'},
+          {label:'BCLK',gpio:null,status:'ok',note:'Bit clock'},
+          {label:'LOUT',gpio:null,status:'ok',note:'Left channel out'},
+          {label:'AGND',gpio:null,status:'ok',note:'Analog ground'},
+          {label:'ROUT',gpio:null,status:'ok',note:'Right channel out'},
+        ]},
+    ],
+    decorate(g){
+      const jack = new THREE.Mesh(new THREE.CylinderGeometry(3,3,9,20),
+        new THREE.MeshStandardMaterial({color:0x3a4048, metalness:.7, roughness:.4}));
+      jack.rotation.z = Math.PI/2;
+      jack.position.set(21, 1.4, 0); g.add(jack);
+    }
+  },
+
+  {
+    id:'tp4056', name:'TP4056 Battery Charger & Protection Module',
+    w:28, d:17, h:1.6, color:0x00695c, layer:'Bottom',
+    x:0, y:0, z:55, rotDeg:0,
+    pinGroups:[
+      { edge:'left', dir:'pad-top', coord:'even',
+        items:[
+          {label:'IN+',gpio:null,status:'unused',note:'Optional 5V input pad — not in use'},
+          {label:'IN-',gpio:null,status:'unused',note:'Optional ground input pad — not in use'},
+        ]},
+      { edge:'right', dir:'pad-top', coord:'even',
+        items:[
+          {label:'OUT+',gpio:null,status:'ok',note:'Positive out to boost / system rail'},
+          {label:'B+',gpio:null,status:'ok',note:'Positive lead to LiPo battery'},
+          {label:'B-',gpio:null,status:'ok',note:'Negative lead to LiPo battery'},
+          {label:'OUT-',gpio:null,status:'ok',note:'Ground out to system ground rail'},
+        ]},
+    ],
+    decorate(g){
+      const usb = new THREE.Mesh(new THREE.BoxGeometry(6,3.2,7.5),
+        new THREE.MeshStandardMaterial({color:0xc7ccd4, metalness:.8, roughness:.3}));
+      usb.position.set(-16,1.3,0); g.add(usb);
+    }
+  },
+
+  {
+    id:'battery', name:'LiPo Battery',
+    w:40, d:60, h:3, color:0x3b4a6b, layer:'Bottom',
+    x:60, y:0, z:35, rotDeg:0,
+    pinGroups:[
+      { edge:'top', dir:'lead', coord:'even', margin:8,
+        items:[
+          {label:'B+',gpio:null,status:'ok',note:'Red lead, positive'},
+          {label:'B-',gpio:null,status:'ok',note:'Black lead, negative'},
+        ]},
+    ],
+    decorate(g){
+      const label = new THREE.Mesh(new THREE.BoxGeometry(30,0.4,44),
+        new THREE.MeshStandardMaterial({color:0xd7dce2, roughness:.8}));
+      label.position.set(0,3.2,3); g.add(label);
+    }
+  },
+
+  {
+    id:'buttons', name:'Tactile Buttons x5',
+    w:54, d:6, h:5, color:0x212121, layer:'Top',
+    x:-5, y:24, z:5, rotDeg:0,
+    customBuild:true, pinGroups:[]
+  },
+
+  {
+    id:'boost', name:'MT3608 DC-DC Step-Up Boost Converter',
+    w:36, d:17, h:1.6, color:0x8d6e00, layer:'Flexible',
+    x:-45, y:6, z:0, rotDeg:0,
+    pinGroups:[
+      { edge:'left', dir:'pad-top', coord:'even',
+        items:[
+          {label:'VOUT+',gpio:null,status:'ok',note:'Positive boosted output'},
+          {label:'VOUT-',gpio:null,status:'ok',note:'Output ground'},
+        ]},
+      { edge:'right', dir:'pad-top', coord:'even',
+        items:[
+          {label:'VIN+',gpio:null,status:'ok',note:'Positive input (from TP4056 OUT+)'},
+          {label:'VIN-',gpio:null,status:'ok',note:'Input ground (from TP4056 OUT-)'},
+        ]},
+    ],
+    decorate(g){
+      const pot = new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.6,3,20),
+        new THREE.MeshStandardMaterial({color:0x2255cc, roughness:.5}));
+      pot.position.set(-10,3,0); g.add(pot);
+      const ind = new THREE.Mesh(new THREE.CylinderGeometry(3.4,3.4,4,20),
+        new THREE.MeshStandardMaterial({color:0x333333, roughness:.6}));
+      ind.position.set(10,3.6,0); g.add(ind);
+    }
+  },
+
+  {
+    id:'ldo', name:'AMS1117-3.3 LDO Step-Down Power Supply',
+    w:12, d:9, h:1.6, color:0x455a64, layer:'Flexible',
+    x:20, y:6, z:0, rotDeg:0,
+    pinGroups:[
+      { edge:'left', dir:'out', coord:'even',
+        items:[
+          {label:'VIN',gpio:null,status:'ok',note:'5V DC power input'},
+          {label:'OUT',gpio:null,status:'ok',note:'Regulated 3.3V output'},
+          {label:'GND',gpio:null,status:'ok',note:'Common ground'},
+        ]},
+    ],
+    decorate(g){
+      const ic = new THREE.Mesh(new THREE.BoxGeometry(6,3,6),
+        new THREE.MeshStandardMaterial({color:0x111318, roughness:.6}));
+      ic.position.set(2,1.5+.8,0); g.add(ic);
+    }
+  },
+];
+
+/* ============================================================
+   Scene / camera / renderer / controls
+   ============================================================ */
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0f14);
+
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.5, 3000);
+camera.position.set(160, 190, 210);
+
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+document.getElementById('app').appendChild(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(innerWidth, innerHeight);
+labelRenderer.domElement.id = 'labelLayer';
+document.getElementById('app').appendChild(labelRenderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.maxPolarAngle = Math.PI * 0.495;
+controls.target.set(0,10,0);
+// Pan slides the camera+target in screen space (feels like "moving the view"
+// left/right/up/down) rather than sliding along the world ground plane.
+controls.screenSpacePanning = true;
+controls.panSpeed = 1.1;
+controls.zoomSpeed = 0.9;
+// Right-drag and middle-drag both pan (covers mice without a dedicated
+// pan button); left stays orbit. Shift+left-drag (bound below) also pans,
+// since that's the easiest gesture on a trackpad — no right-click needed.
+controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.PAN };
+controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+let shiftPanActive = false;
+addEventListener('keydown', e=>{
+  if (e.key==='Shift' && !shiftPanActive){ shiftPanActive = true; controls.mouseButtons.LEFT = THREE.MOUSE.PAN; }
+});
+addEventListener('keyup', e=>{
+  if (e.key==='Shift'){ shiftPanActive = false; controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE; }
+});
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const dir = new THREE.DirectionalLight(0xffffff, 1.4);
+dir.position.set(80,160,60); scene.add(dir);
+const dir2 = new THREE.DirectionalLight(0x88aaff, 0.35);
+dir2.position.set(-100,80,-80); scene.add(dir2);
+
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(700,700),
+  new THREE.MeshStandardMaterial({color:0x0b0f14, roughness:1}));
+floor.rotation.x = -Math.PI/2; floor.position.y = -0.08; scene.add(floor);
+
+const grid = new THREE.GridHelper(280, 28, 0x2f6fb7, 0x1c232c);
+grid.material.transparent = true; grid.material.opacity = 0.85; scene.add(grid);
+
+/* ============================================================
+   Pin & module classification helpers
+   ============================================================ */
+function classify(label){
+  if (/^(GND|AGND)$/i.test(label)) return 'GND';
+  if (/^(5V|3V3|VCC|VIN\+?|VOUT\+?|VIN-|VOUT-|OUT\+|OUT-|B\+|B-|IN\+|IN-|3VO|LED)$/i.test(label)) return 'PWR';
+  return 'SIGNAL';
+}
+const HIGH_SPEED = /^(SCK|SDA|MOSI|MISO|SCLK|BCLK|WSEL|DIN|CS|SD_CS|SD_MOSI|SD_MISO|SD_SCK|A0|RESET|DC)$/i;
+const CLASS_COLOR = { GND:0x7a8494, PWR:0xe0605a, SIGNAL:0x5aa9ff };
+
+/* ============================================================
+   Builders
+   ============================================================ */
+const pinMeshes = [];      // visible pin markers
+const pinPickMeshes = [];  // invisible larger hit targets, 1:1 with pinMeshes
+const pickMeshes = [];     // module body hit targets
+const moduleGroups = [];
+const allPins = [];        // {module, def, label, gpio, note, status, edge, mesh, pickMesh}
+
+function addPinGroup(group, def, pg){
+  const n = pg.items.length;
+  const margin = pg.margin ?? 3;
+  const horiz = (pg.edge === 'top' || pg.edge === 'bottom');
+  const edgeLen = horiz ? def.w : def.d;
+  const positions = pg.coord === 'exact'
+    ? pg.items.map(it => it.y - def.d/2)
+    : spread(n, edgeLen, margin);
+
+  for (let i=0;i<n;i++){
+    const it = pg.items[i];
+    const along = positions[i];
+    let lx, lz, lyMesh, geo, pickR = 2.2, matColor = CLASS_COLOR[classify(it.label)];
+
+    if (pg.edge === 'left')  { lx = -(def.w/2); lz = along; }
+    if (pg.edge === 'right') { lx =  (def.w/2); lz = along; }
+    if (pg.edge === 'top')   { lx = along; lz = -(def.d/2); }
+    if (pg.edge === 'bottom'){ lx = along; lz =  (def.d/2); }
+
+    let px=lx, py=0, pz=lz;
+    if (pg.dir === 'down'){
+      const stub = 3.2;
+      py = -stub/2;
+      geo = horiz ? new THREE.BoxGeometry(1.1,stub,1.7) : new THREE.BoxGeometry(1.7,stub,1.1);
+      if (pg.edge==='left') px = lx - 0.55; if (pg.edge==='right') px = lx + 0.55;
+      if (pg.edge==='top') pz = lz - 0.55; if (pg.edge==='bottom') pz = lz + 0.55;
+    } else if (pg.dir === 'pad-top'){
+      py = def.h + 0.15;
+      geo = horiz ? new THREE.BoxGeometry(1.6,0.3,1.9) : new THREE.BoxGeometry(1.9,0.3,1.6);
+    } else if (pg.dir === 'out'){
+      const stub = 4.2;
+      px = lx - stub/2; py = def.h/2;
+      geo = new THREE.BoxGeometry(stub,1.4,1.4);
+    } else if (pg.dir === 'lead'){
+      const stub = 9;
+      pz = lz - stub/2; py = def.h + 0.6;
+      geo = new THREE.CylinderGeometry(0.5,0.5,stub,8);
+      geo.rotateX(Math.PI/2);
+      matColor = /\+/.test(it.label) ? 0xd6453f : 0x2b2b2b;
+    }
+
+    const uid = `${def.id}#${pg.edge}#${i}`;
+    const mat = new THREE.MeshStandardMaterial({ color: it.status==='unused' ? 0x444a52 : matColor,
+      metalness:.5, roughness:.35, emissive:0x000000 });
+    const pin = new THREE.Mesh(geo, mat);
+    pin.position.set(px,py,pz);
+    pin.userData = { isPin:true, uid, moduleId:def.id, module:def.name, label:it.label, gpio:it.gpio,
+      note:it.note, status:it.status, edge:pg.edge, dir:pg.dir, exact:pg.coord==='exact' };
+    group.add(pin);
+    pinMeshes.push(pin);
+
+    const pick = new THREE.Mesh(new THREE.SphereGeometry(pickR,10,10),
+      new THREE.MeshBasicMaterial({transparent:true, opacity:0, depthWrite:false}));
+    pick.position.copy(pin.position);
+    pick.userData = pin.userData;
+    pick.userData.mesh = pin;
+    group.add(pick);
+    pinPickMeshes.push(pick);
+
+    // always-on label, offset outward from the board edge so it reads as a
+    // little flag next to the pin rather than sitting on top of the board
+    const div = document.createElement('div');
+    const cls = classify(it.label);
+    div.className = 'pin-label ' + cls + (it.status==='unused' ? ' unused' : '');
+    div.textContent = it.label;
+    const labelObj = new CSS2DObject(div);
+    const outward = 3.6;
+    let lox=0, loy=0, loz=0;
+    if (pg.dir === 'down'){ loy = -3.6; }
+    else if (pg.dir === 'pad-top'){ loy = 1.4; }
+    else if (pg.dir === 'out'){ lox = -outward; }
+    else if (pg.dir === 'lead'){ loz = -4; loy = 2; }
+    if (pg.edge==='left')  lox -= outward*0.4;
+    if (pg.edge==='right') lox += outward*0.4;
+    if (pg.edge==='top')   loz -= outward*0.4;
+    if (pg.edge==='bottom')loz += outward*0.4;
+    labelObj.position.set(lox, loy, loz);
+    labelObj.userData.uid = uid;
+    pin.add(labelObj);
+
+    allPins.push({ uid, moduleId:def.id, module:def.name, label:it.label, gpio:it.gpio, note:it.note,
+      status:it.status, edge:pg.edge, exact: pg.coord==='exact', mesh:pin, pickMesh:pick, group, labelObj });
+  }
+}
+
+function addPickBox(group, def){
+  const pick = new THREE.Mesh(
+    new THREE.BoxGeometry(def.w+7, 14, def.d+7),
+    new THREE.MeshBasicMaterial({ transparent:true, opacity:0, depthWrite:false })
+  );
+  pick.position.y = def.h/2 + 3;
+  pick.userData = { group };
+  group.add(pick);
+  pickMeshes.push(pick);
+}
+
+function buildModule(def){
+  const group = new THREE.Group();
+  group.name = def.name;
+  group.userData.id = def.id;
+  group.userData.def = def;
+
+  const mat = new THREE.MeshStandardMaterial({ color:def.color, roughness:.6, metalness:.15 });
+  group.userData.pcbMat = mat;
+
+  if (def.customBuild){
+    for (let i=0;i<5;i++){
+      const x = -24 + i*12;
+      const body = new THREE.Mesh(new THREE.BoxGeometry(6,4,6),
+        new THREE.MeshStandardMaterial({color:0x1a1a1a, roughness:.7}));
+      body.position.set(x,2,0); group.add(body);
+      const plunger = new THREE.Mesh(new THREE.CylinderGeometry(1.8,1.8,1.6,16),
+        new THREE.MeshStandardMaterial({color:0x555c66, roughness:.5}));
+      plunger.position.set(x,4.8,0); group.add(plunger);
+    }
+  } else {
+    const pcb = new THREE.Mesh(new THREE.BoxGeometry(def.w, def.h, def.d), mat);
+    pcb.position.y = def.h/2;
+    group.add(pcb);
+    def.pinGroups.forEach(pg => addPinGroup(group, def, pg));
+    if (def.decorate) def.decorate(group);
+  }
+
+  addPickBox(group, def);
+  group.position.set(def.x, def.y, def.z);
+  group.rotation.y = THREE.MathUtils.degToRad(def.rotDeg || 0);
+  scene.add(group);
+  moduleGroups.push(group);
+  return group;
+}
+
+MODULES.forEach(buildModule);
+
+/* ============================================================
+   Snapping + drag
+   ============================================================ */
+const PITCH = 2.54;
+const snapChk = document.getElementById('snapChk');
+function snap(v){ return snapChk.checked ? Math.round(v/PITCH)*PITCH : v; }
+function snapGroup(g){ g.position.x = snap(g.position.x); g.position.z = snap(g.position.z); }
+
+const tooltip = document.getElementById('tooltip');
+
+/* ------------------------------------------------------------
+   Custom drag (replaces three.js DragControls).
+   DragControls writes its result straight into the picked
+   object's LOCAL position, which is wrong once that object
+   lives inside a rotated/translated group — that mismatch is
+   exactly what produced the "tiny move, huge jump" behaviour.
+   Instead we raycast against a horizontal plane at the module's
+   current height and move the module's WORLD x/z to match the
+   cursor 1:1. This is plain pointer-event math, so mouse,
+   trackpad and touch all behave the same way. -------------- */
+const raycaster = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+const dragPlane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
+const dragOffset = new THREE.Vector3();
+let draggingGroup = null;
+
+function setNDC(e){ ndc.x=(e.clientX/innerWidth)*2-1; ndc.y=-(e.clientY/innerHeight)*2+1; }
+
+function planeHit(e, planeY){
+  setNDC(e);
+  raycaster.setFromCamera(ndc, camera);
+  dragPlane.constant = -planeY;
+  const hit = new THREE.Vector3();
+  const ok = raycaster.ray.intersectPlane(dragPlane, hit);
+  return ok ? hit : null;
+}
+
+/* ============================================================
+   Selection + transform UI
+   ============================================================ */
+let selected = null;
+const selName = document.getElementById('selName');
+const posRead = document.getElementById('posRead');
+const zSlider = document.getElementById('zSlider');
+const rotSlider = document.getElementById('rotSlider');
+const zVal = document.getElementById('zVal');
+const rotVal = document.getElementById('rotVal');
+const selectEl = document.getElementById('moduleSelect');
+
+MODULES.forEach(m => {
+  const o = document.createElement('option');
+  o.value = o.textContent = m.name;
+  selectEl.appendChild(o);
+});
+
+function selectModule(g){
+  if (selected) selected.userData.pcbMat.emissive.setHex(0x000000);
+  selected = g;
+  if (g){
+    g.userData.pcbMat.emissive.copy(g.userData.pcbMat.color).multiplyScalar(0.4);
+    selName.textContent = g.name;
+    selectEl.value = g.name;
+    zSlider.value = g.position.y;
+    rotSlider.value = Math.round(THREE.MathUtils.radToDeg(g.rotation.y)) % 360;
+    zVal.textContent = (+zSlider.value).toFixed(1)+' mm';
+    rotVal.textContent = rotSlider.value+'°';
+  } else {
+    selName.textContent = 'None — click a module';
+    posRead.textContent = '';
+    selectEl.value = '';
+  }
+}
+
+zSlider.addEventListener('input', () => { if(selected){ selected.position.y = +zSlider.value; zVal.textContent=(+zSlider.value).toFixed(1)+' mm'; }});
+rotSlider.addEventListener('input', () => { if(selected){ selected.rotation.y = THREE.MathUtils.degToRad(+rotSlider.value); rotVal.textContent=rotSlider.value+'°'; }});
+selectEl.addEventListener('change', () => { const g = moduleGroups.find(g=>g.name===selectEl.value); selectModule(g||null); });
+
+function nudge(dx,dz){
+  if(!selected) return;
+  const s = precision ? 0.25 : 1;
+  selected.position.x = snap(selected.position.x + dx*s);
+  selected.position.z = snap(selected.position.z + dz*s);
+}
+let precision = false;
+addEventListener('keydown', (e) => {
+  if (e.target.tagName==='SELECT' || e.target.tagName==='INPUT') return;
+  if (e.key==='Shift'){ precision = true; return; }
+  if (e.key==='Escape'){ cancelPending(); return; }
+  const step = PITCH;
+  switch(e.key){
+    case 'ArrowUp': e.preventDefault(); nudge(0,-step); break;
+    case 'ArrowDown': e.preventDefault(); nudge(0, step); break;
+    case 'ArrowLeft': e.preventDefault(); nudge(-step,0); break;
+    case 'ArrowRight': e.preventDefault(); nudge(step,0); break;
+    case 'r': case 'R':
+      if (selected){
+        selected.rotation.y += Math.PI/2;
+        rotSlider.value = Math.round(THREE.MathUtils.radToDeg(selected.rotation.y))%360;
+        rotVal.textContent = rotSlider.value+'°';
+      }
+      break;
+  }
+});
+addEventListener('keyup', (e)=>{ if(e.key==='Shift') precision=false; });
+
+/* ============================================================
+   Wiring: click pin -> click pin -> connection
+   ============================================================ */
+let pending = null;             // {pinObj}
+let connections = [];           // {id, aIdx, bIdx, line, tube}
+let connCounter = 1;
+const connectHint = document.getElementById('connectHint');
+const connList = document.getElementById('connList');
+const warningsEl = document.getElementById('warnings');
+const wireChk = document.getElementById('wireChk');
+
+function pinWorldPos(pinRef){
+  const v = new THREE.Vector3();
+  pinRef.mesh.getWorldPosition(v);
+  return v;
+}
+function findPinByMeshUD(ud){
+  return allPins.find(p => p.mesh === ud.mesh);
+}
+function wireQuality(distMm, aLabel, bLabel){
+  const hs = HIGH_SPEED.test(aLabel) || HIGH_SPEED.test(bLabel);
+  const longT = hs ? 100 : 140, tooLongT = hs ? 200 : 280;
+  if (distMm < 4) return 'tight';
+  if (distMm > tooLongT) return 'toolong';
+  if (distMm > longT) return 'long';
+  return 'ok';
+}
+function qualityLabel(q){
+  return { ok:'OK', tight:'very tight — check clearance', long:'long — verify routing',
+    toolong:'too long — re-route or move modules' }[q];
+}
+
+function makeWireMesh(){
+  const mat = new THREE.LineBasicMaterial({ color:0xffffff, linewidth:2 });
+  const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+  return new THREE.Line(geo, mat);
+}
+
+function addConnection(pinA, pinB, presetId){
+  if (pinA===pinB) return null;
+  const dup = connections.find(c =>
+    (c.a===pinA && c.b===pinB) || (c.a===pinB && c.b===pinA));
+  if (dup) return dup;
+  const line = makeWireMesh();
+  scene.add(line);
+  const conn = { id: presetId || ('conn_'+(connCounter++)), a:pinA, b:pinB, line };
+  connections.push(conn);
+  updateWires();
+  renderConnList();
+  return conn;
+}
+function removeConnection(conn){
+  scene.remove(conn.line);
+  conn.line.geometry.dispose();
+  connections = connections.filter(c=>c!==conn);
+  renderConnList();
+}
+function updateWires(){
+  const cls = { GND:'GND', PWR:'PWR', SIGNAL:'SIGNAL' };
+  connections.forEach(c => {
+    const pa = pinWorldPos(c.a), pb = pinWorldPos(c.b);
+    const mid = pa.clone().add(pb).multiplyScalar(0.5);
+    mid.y += Math.max(4, pa.distanceTo(pb)*0.12);
+    const curve = new THREE.QuadraticBezierCurve3(pa, mid, pb);
+    const pts = curve.getPoints(16);
+    c.line.geometry.dispose();
+    c.line.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+    const dist = pa.distanceTo(pb);
+    const q = wireQuality(dist, c.a.label, c.b.label);
+    const colorMap = { ok:0x3ecf8e, tight:0xe0a83e, long:0xe0a83e, toolong:0xe0605a };
+    c.line.material.color.setHex(colorMap[q]);
+    c.quality = q; c.distance = dist;
+    c.line.visible = wireChk.checked;
+  });
+}
+function renderConnList(){
+  connList.innerHTML = '';
+  if (!connections.length){
+    connList.innerHTML = '<div style="color:var(--muted);font-size:11.5px;">No connections yet.</div>';
+  }
+  connections.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'conn';
+    const mismatch = classify(c.a.label)==='GND' && classify(c.b.label)!=='GND' && c.b.label!=='GND'
+      ? ' <span class="tag toolong">GND↔non-GND</span>' : '';
+    const unused = (c.a.status==='unused' || c.b.status==='unused') ? ' <span class="tag toolong">pin not in use</span>' : '';
+    div.innerHTML = `<div class="lbl"><b>${c.a.module}</b>.${c.a.label} &harr; <b>${c.b.module}</b>.${c.b.label}${mismatch}${unused}<br>
+      <span class="len">${c.distance.toFixed(1)} mm</span> <span class="tag ${c.quality}">${qualityLabel(c.quality)}</span></div>`;
+    const btn = document.createElement('button');
+    btn.textContent = '✕'; btn.className='danger';
+    btn.onclick = () => removeConnection(c);
+    div.appendChild(btn);
+    connList.appendChild(div);
+  });
+  renderWarnings();
+}
+function renderWarnings(){
+  warningsEl.innerHTML = '';
+  // simple proximity check against the ESP32 antenna keep-out zone
+  const espGroup = moduleGroups.find(g=>g.userData.id==='esp32');
+  if (espGroup){
+    const worldZone = new THREE.Vector3(0,1.65,21.5); espGroup.localToWorld(worldZone);
+    moduleGroups.forEach(other=>{
+      if (other===espGroup) return;
+      const d = new THREE.Vector3(other.position.x, worldZone.y, other.position.z).distanceTo(
+        new THREE.Vector3(worldZone.x, worldZone.y, worldZone.z));
+      if (d < 20 && Math.abs(other.position.y - espGroup.position.y) < 8){
+        const line = document.createElement('div');
+        line.className='wline';
+        line.textContent = `⚠ ${other.name} is close to the ESP32 antenna keep-out zone (~${d.toFixed(0)} mm) — verify clearance.`;
+        warningsEl.appendChild(line);
+      }
+    });
+  }
+}
+
+function cancelPending(){
+  if (pending){ pending.mesh.material.emissive.setHex(0x000000); pending = null; }
+  connectHint.textContent = 'Click any pin to start wiring.';
+  connectHint.classList.remove('active');
+}
+
+/* ============================================================
+   Pointer handling: pin clicks (wiring) take priority; otherwise
+   a hit on a module body starts the custom plane-drag; a plain
+   click with no movement still counts as "select".
+   ============================================================ */
+let downPos = null;
+let downWasPin = false;
+
+renderer.domElement.addEventListener('pointerdown', e => {
+  if (e.button !== 0 || shiftPanActive) return; // only plain left-click drags a module; other buttons / Shift are for camera pan
+  downPos = [e.clientX, e.clientY];
+  downWasPin = false;
+  setNDC(e);
+  raycaster.setFromCamera(ndc, camera);
+
+  const pinHits = raycaster.intersectObjects(pinPickMeshes, false);
+  if (pinHits.length){ downWasPin = true; return; }
+
+  const hits = raycaster.intersectObjects(pickMeshes, false);
+  if (hits.length){
+    const g = hits[0].object.userData.group;
+    const hit = planeHit(e, g.position.y);
+    if (!hit) return;
+    draggingGroup = g;
+    dragOffset.set(hit.x - g.position.x, 0, hit.z - g.position.z);
+    controls.enabled = false;
+    tooltip.style.display = 'none';
+  }
+});
+
+renderer.domElement.addEventListener('pointermove', e => {
+  if (draggingGroup){
+    const hit = planeHit(e, draggingGroup.position.y);
+    if (hit){
+      draggingGroup.position.x = snap(hit.x - dragOffset.x);
+      draggingGroup.position.z = snap(hit.z - dragOffset.z);
+    }
+    tooltip.style.display = 'none';
+    return;
+  }
+  setNDC(e);
+  raycaster.setFromCamera(ndc, camera);
+  const pinHits = raycaster.intersectObjects(pinPickMeshes, false);
+  if (pinHits.length){
+    const ud = pinHits[0].object.userData;
+    const cls = classify(ud.label);
+    const gpioTxt = ud.gpio!=null ? ` (GPIO${ud.gpio})` : '';
+    const unusedTxt = ud.status==='unused' ? ' <span class="w">— not in use</span>' : '';
+    const cautionTxt = ud.status==='caution' ? ' <span class="w">— caution</span>' : '';
+    const exactTxt = ud.exact ? '' : ' <span class="d">(edge-estimated position)</span>';
+    tooltip.innerHTML = `<span class="m">${ud.module}</span> &middot; <span class="p">${ud.label}</span>${gpioTxt} &middot; ${cls}${unusedTxt}${cautionTxt}<br><span class="d">${ud.note||''}${exactTxt}</span>`;
+    tooltip.style.display='block';
+    tooltip.style.left=(e.clientX+16)+'px'; tooltip.style.top=(e.clientY+16)+'px';
+    return;
+  }
+  const modHits = raycaster.intersectObjects(pickMeshes, false);
+  if (modHits.length){
+    tooltip.innerHTML = `<span class="m">${modHits[0].object.userData.group.name}</span> &middot; click to select, drag to move`;
+    tooltip.style.display='block';
+    tooltip.style.left=(e.clientX+16)+'px'; tooltip.style.top=(e.clientY+16)+'px';
+  } else {
+    tooltip.style.display='none';
+  }
+});
+
+renderer.domElement.addEventListener('pointerup', e => {
+  if (draggingGroup){
+    controls.enabled = true;
+    selectModule(draggingGroup);
+    draggingGroup = null;
+    downPos = null;
+    return;
+  }
+  if (!downPos){ return; }
+  const moved = Math.hypot(e.clientX-downPos[0], e.clientY-downPos[1]);
+  downPos = null;
+  if (moved > 5) return;
+
+  if (downWasPin){
+    setNDC(e);
+    raycaster.setFromCamera(ndc, camera);
+    const pinHits = raycaster.intersectObjects(pinPickMeshes, false);
+    if (!pinHits.length) return;
+    const ud = pinHits[0].object.userData;
+    const pinRef = findPinByMeshUD(ud);
+    if (!pinRef) return;
+    if (!pending){
+      pending = pinRef;
+      pinRef.mesh.material.emissive.setHex(0xffdd55);
+      connectHint.textContent = `Connecting from ${pinRef.module}.${pinRef.label} — click target pin.`;
+      connectHint.classList.add('active');
+    } else if (pending === pinRef){
+      cancelPending();
+    } else {
+      const from = pending;
+      cancelPending();
+      addConnection(from, pinRef);
+    }
+    return;
+  }
+
+  setNDC(e);
+  raycaster.setFromCamera(ndc, camera);
+  const hits = raycaster.intersectObjects(pickMeshes, false);
+  selectModule(hits.length ? hits[0].object.userData.group : null);
+});
+renderer.domElement.addEventListener('pointerleave', ()=>tooltip.style.display='none');
+
+/* ============================================================
+   Save / Load
+   ============================================================ */
+function buildExport(){
+  const modulesOut = moduleGroups.map(g=>{
+    const def = g.userData.def;
+    const pinsOut = allPins.filter(p=>p.group===g).map(p=>{
+      const wp = pinWorldPos(p);
+      return {
+        id: p.uid, label: p.label, gpio: p.gpio, edge: p.edge, status: p.status, note: p.note,
+        coordinateSource: p.exact ? 'exact-from-spec' : 'evenly-spaced-estimate',
+        world: { x:+wp.x.toFixed(3), y:+wp.y.toFixed(3), z:+wp.z.toFixed(3) }
+      };
+    });
+    return {
+      id: def.id, name: def.name, layer: def.layer,
+      boardSize: { w:def.w, d:def.d, h:def.h },
+      position: { x:+g.position.x.toFixed(3), y:+g.position.y.toFixed(3), z:+g.position.z.toFixed(3) },
+      rotationYDeg: Math.round(THREE.MathUtils.radToDeg(g.rotation.y)) % 360,
+      pins: pinsOut
+    };
+  });
+  const connsOut = connections.map(c=>({
+    id: c.id,
+    from: { module: c.a.moduleId, pin: c.a.label, pinId: c.a.uid },
+    to: { module: c.b.moduleId, pin: c.b.label, pinId: c.b.uid },
+    distanceMm: +c.distance.toFixed(2),
+    quality: c.quality,
+    netType: classify(c.a.label)==='GND' && classify(c.b.label)==='GND' ? 'GND'
+      : (classify(c.a.label)==='PWR' || classify(c.b.label)==='PWR') ? 'PWR' : 'SIGNAL'
+  }));
+  return {
+    meta: {
+      tool: 'MP3 Player 3D Layout & Wiring Planner',
+      units: 'mm',
+      coordinateSystem: "World axes: X = left/right, Y = stack height (up), Z = front/back. Pin \"world\" coordinates already include the module's position and Y-rotation.",
+      gridPitchMm: 2.54,
+      exportedAt: new Date().toISOString(),
+      note: 'coordinateSource "evenly-spaced-estimate" means the source spec only gave pin order for that edge, not per-pin mm values; treat those X/Z offsets as approximate. ' +
+        'Several modules have more than one pin with the same label (e.g. the ESP32 has four GND pins) — when proposing new connections, reference pins by their unique "id" field, not just by label, to avoid picking the wrong one.'
+    },
+    modules: modulesOut,
+    connections: connsOut
+  };
+}
+
+document.getElementById('saveBtn').addEventListener('click', ()=>{
+  const data = buildExport();
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `mp3-player-layout-${Date.now()}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+});
+
+document.getElementById('loadBtn').addEventListener('click', ()=>document.getElementById('fileInput').click());
+document.getElementById('fileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      applyImport(data);
+    } catch(err){
+      alert('Could not read that file as a layout JSON: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+function applyImport(data){
+  connections.forEach(c=>{ scene.remove(c.line); c.line.geometry.dispose(); });
+  connections = [];
+  (data.modules||[]).forEach(m=>{
+    const g = moduleGroups.find(gg=>gg.userData.id===m.id);
+    if (!g) return;
+    if (m.position){ g.position.set(m.position.x, m.position.y, m.position.z); }
+    if (typeof m.rotationYDeg === 'number'){ g.rotation.y = THREE.MathUtils.degToRad(m.rotationYDeg); }
+  });
+  (data.connections||[]).forEach(c=>{
+    // prefer the unique pinId (unambiguous); fall back to module+label
+    // for hand-written or AI-authored JSON that only names the pin.
+    const findEnd = (end) => (end.pinId && allPins.find(p=>p.uid===end.pinId))
+      || allPins.find(p=>p.moduleId===end.module && p.label===end.pin);
+    const a = findEnd(c.from);
+    const b = findEnd(c.to);
+    if (a && b) addConnection(a, b, c.id);
+  });
+  updateWires();
+  renderConnList();
+  selectModule(null);
+}
+
+wireChk.addEventListener('change', updateWires);
+const labelChk = document.getElementById('labelChk');
+labelChk.addEventListener('change', () => {
+  document.getElementById('labelLayer').style.display = labelChk.checked ? '' : 'none';
+});
+
+/* ============================================================
+   Loop / resize
+   ============================================================ */
+renderConnList();
+function animate(){
+  requestAnimationFrame(animate);
+  if (selected){
+    posRead.textContent = `X ${selected.position.x.toFixed(2)}  ·  Z ${selected.position.z.toFixed(2)}  ·  Y ${selected.position.y.toFixed(1)}`;
+  }
+  updateWires();
+  controls.update();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+}
+animate();
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  labelRenderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>

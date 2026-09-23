@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 SD Card Fix Guide</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Prism CSS (Dark Theme) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    colors: {
+                        darker: '#09090b',
+                        dark: '#18181b',
+                        card: '#27272a',
+                        accent: '#3b82f6',
+                        danger: '#ef4444',
+                        success: '#22c55e',
+                        warning: '#eab308'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: theme('colors.darker'); color: #e4e4e7; }
+        .glass-card {
+            background-color: theme('colors.dark');
+            border: 1px solid #3f3f46;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .ascii-art {
+            font-family: 'Fira Code', monospace;
+            background-color: #000;
+            color: #34d399; /* emerald green */
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid #3f3f46;
+            font-size: 0.9rem;
+            line-height: 1.3;
+            white-space: pre;
+        }
+        .code-block-wrapper { position: relative; margin-top: 1rem; margin-bottom: 1rem; }
+        .copy-btn {
+            position: absolute; top: 0.5rem; right: 0.5rem;
+            background: #3f3f46; color: white; border: none;
+            padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 500;
+            cursor: pointer; transition: all 0.2s; z-index: 10;
+        }
+        .copy-btn:hover { background: #52525b; transform: scale(1.05); }
+        .copy-btn.copied { background: theme('colors.success'); }
+        
+        /* Checkbox styling */
+        .check-item {
+            display: flex; align-items: flex-start; gap: 1rem;
+            padding: 1rem; border-radius: 8px; transition: background 0.2s;
+            border: 1px solid transparent;
+            cursor: pointer;
+        }
+        .check-item:hover { background: rgba(255,255,255,0.03); border-color: #3f3f46; }
+        .check-item input[type="checkbox"] {
+            width: 1.5rem; height: 1.5rem; margin-top: 0.125rem;
+            accent-color: theme('colors.accent'); cursor: pointer;
+        }
+        .check-item input[type="checkbox"]:checked + span {
+            text-decoration: line-through; color: #71717a;
+        }
+        
+        .nav-link {
+            display: block; padding: 0.75rem 1rem; border-radius: 6px;
+            color: #a1a1aa; transition: all 0.2s; font-weight: 500;
+        }
+        .nav-link:hover, .nav-link.active { background: #27272a; color: white; border-left: 3px solid theme('colors.accent'); }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #09090b; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row min-h-screen">
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-full md:w-72 bg-dark border-r border-zinc-800 p-6 md:fixed md:h-screen overflow-y-auto z-20">
+        <h2 class="text-xl font-bold text-white mb-8 flex items-center gap-3">
+            <i class="fa-solid fa-microchip text-accent text-2xl"></i> SD Fix Guide
+        </h2>
+        <nav class="space-y-2">
+            <a href="#intro" class="nav-link"><i class="fa-solid fa-bug w-6 text-center"></i> What Was Wrong</a>
+            <a href="#phase1" class="nav-link"><i class="fa-solid fa-fire w-6 text-center text-orange-500"></i> 1. eFuse Burn</a>
+            <a href="#phase2" class="nav-link"><i class="fa-solid fa-gear w-6 text-center text-zinc-400"></i> 2. IDE Settings</a>
+            <a href="#phase3" class="nav-link"><i class="fa-solid fa-network-wired w-6 text-center text-emerald-400"></i> 3. Wiring Guide</a>
+            <a href="#phase4" class="nav-link"><i class="fa-solid fa-hard-drive w-6 text-center text-blue-400"></i> 4. Format SD</a>
+            <a href="#phase5" class="nav-link"><i class="fa-solid fa-code w-6 text-center text-purple-400"></i> 5. Test Code</a>
+            <a href="#checklist" class="nav-link"><i class="fa-solid fa-list-check w-6 text-center text-green-400"></i> Final Checklist</a>
+        </nav>
+        <div class="mt-12 p-4 bg-darker rounded-lg border border-zinc-800 text-xs text-zinc-500 text-center">
+            Designed for Atharva's<br>DIY MP3 Player Project
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-6 md:pl-[19rem] max-w-6xl mx-auto w-full">
+        
+        <header class="mb-12 pt-8">
+            <div class="inline-block px-3 py-1 bg-accent/10 border border-accent/20 text-accent rounded-full text-sm font-semibold mb-4">
+                Hardware Fix Series
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">ESP32 + Micro SD Card <br><span class="text-transparent bg-clip-text bg-gradient-to-r from-accent to-purple-500">DEFINITIVE FIX</span></h1>
+            <p class="text-xl text-zinc-400">An interactive, step-by-step resolution walkthrough.</p>
+        </header>
+
+        <!-- Intro Section -->
+        <section id="intro" class="glass-card border-l-4 border-l-danger scroll-mt-20">
+            <h2 class="text-2xl font-semibold text-white mb-4"><i class="fa-solid fa-microscope text-danger mr-2"></i> What Was Actually Wrong?</h2>
+            <p class="mb-4 text-lg text-zinc-300">Your cheap blue SD module has a buffer IC (<code class="bg-darker px-2 py-1 rounded text-accent">74LVC125</code>) that is <strong>always active</strong>. At power-on, it pulls <code class="bg-darker px-2 py-1 rounded text-white">GPIO 12</code> on the ESP32 HIGH through electrical leakage or crosstalk.</p>
+            
+            <div class="bg-darker p-5 rounded-lg flex flex-col md:flex-row items-start md:items-center gap-4 text-zinc-300 border border-zinc-800 mt-6">
+                <i class="fa-solid fa-triangle-exclamation text-4xl text-warning"></i>
+                <div>
+                    <p class="font-semibold text-white mb-1">The Domino Effect:</p>
+                    <p><strong>GPIO 12 HIGH</strong> tells the ESP32 to run its internal flash at <strong>1.8V</strong> instead of 3.3V.<br>The flash chip crashes at 1.8V → <code class="text-danger font-mono bg-zinc-900 px-1 rounded">flash read err, 1000</code> → infinite boot loop.</p>
+                </div>
+            </div>
+            
+            <div class="mt-6 p-4 bg-accent/10 border border-accent/30 rounded-lg">
+                <p class="text-accent font-medium"><i class="fa-solid fa-lightbulb mr-2"></i><strong>The Fix:</strong> We will tell the ESP32 to permanently ignore GPIO 12 and always use 3.3V for flash.</p>
+            </div>
+        </section>
+
+        <!-- Phase 1 -->
+        <section id="phase1" class="glass-card scroll-mt-20">
+            <h2 class="text-2xl font-semibold text-white mb-6 border-b border-zinc-700 pb-3"><i class="fa-solid fa-fire text-orange-500 mr-2"></i> Phase 1: Burn the eFuse (One-Time Fix)</h2>
+            
+            <div class="bg-orange-500/10 border border-orange-500/30 text-orange-200 p-4 rounded-lg mb-8 text-sm">
+                <strong><i class="fa-solid fa-circle-exclamation mr-1"></i> Note:</strong> This is permanent and irreversible, but it is <strong>100% safe</strong> for your ESP32-WROOM-32 board. You are simply locking what should already be the default. GPIO 12 remains fully usable for regular I/O afterwards.
+            </div>
+
+            <div class="space-y-8">
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-darker border border-zinc-700 flex items-center justify-center font-bold text-zinc-400">1</div>
+                    <div>
+                        <h3 class="font-semibold text-white text-lg">Disconnect EVERYTHING</h3>
+                        <p class="text-zinc-400 mt-1">Unplug the SD module completely from the ESP32. Only the USB cable should be connected to your Mac.</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-darker border border-zinc-700 flex items-center justify-center font-bold text-zinc-400">2</div>
+                    <div class="w-full">
+                        <h3 class="font-semibold text-white text-lg">Install esptool</h3>
+                        <p class="text-zinc-400 mt-1 mb-2">Open Terminal (<kbd class="bg-zinc-800 px-1 py-0.5 rounded text-xs text-zinc-300 border border-zinc-600">Cmd</kbd> + <kbd class="bg-zinc-800 px-1 py-0.5 rounded text-xs text-zinc-300 border border-zinc-600">Space</kbd>, type "Terminal") and run:</p>
+                        <div class="code-block-wrapper">
+                            <pre><code class="language-bash">pip3 install esptool</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-darker border border-zinc-700 flex items-center justify-center font-bold text-zinc-400">3</div>
+                    <div class="w-full">
+                        <h3 class="font-semibold text-white text-lg">Find your ESP32's port</h3>
+                        <div class="code-block-wrapper">
+                            <pre><code class="language-bash">ls /dev/cu.*</code></pre>
+                        </div>
+                        <p class="text-zinc-400 mt-2 text-sm">Look for something like <code class="bg-zinc-800 px-1 rounded">/dev/cu.SLAB_USBtoUART</code> or <code class="bg-zinc-800 px-1 rounded">/dev/cu.usbserial-0001</code>. Copy it.</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-darker border border-accent flex items-center justify-center font-bold text-accent shadow-[0_0_10px_rgba(59,130,246,0.3)]">4</div>
+                    <div class="w-full">
+                        <h3 class="font-semibold text-white text-lg">Burn the eFuse</h3>
+                        <p class="text-zinc-400 mt-1 mb-2">Replace the port below with your actual port from step 3:</p>
+                        <div class="code-block-wrapper">
+                            <pre><code class="language-bash">python3 -m esptool --port /dev/cu.SLAB_USBtoUART set_flash_voltage 3.3V</code></pre>
+                        </div>
+                        <p class="text-zinc-500 mt-2 text-sm italic">It will ask you to confirm. Type <strong>BURN</strong> and press Enter.</p>
+                    </div>
+                </div>
+                
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-darker border border-success flex items-center justify-center font-bold text-success">5</div>
+                    <div>
+                        <h3 class="font-semibold text-white text-lg">Power Cycle</h3>
+                        <p class="text-zinc-400 mt-1">Unplug and re-plug the USB cable. You're done. The `flash read err` is defeated forever.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Phase 2 -->
+        <section id="phase2" class="glass-card scroll-mt-20">
+            <h2 class="text-2xl font-semibold text-white mb-6 border-b border-zinc-700 pb-3"><i class="fa-solid fa-gear text-zinc-400 mr-2"></i> Phase 2: Arduino IDE Settings</h2>
+            
+            <p class="text-zinc-300 mb-4">Open Arduino IDE on your MacBook. Go to the <strong>Tools</strong> menu and verify these exact settings:</p>
+            
+            <div class="overflow-x-auto rounded-lg border border-zinc-800">
+                <table class="w-full text-left text-zinc-300 border-collapse bg-zinc-900/50">
+                    <tbody>
+                        <tr class="border-b border-zinc-800 hover:bg-white/5 transition-colors"><td class="py-3 px-4 font-medium text-zinc-400 w-1/3">Board</td><td class="py-3 px-4 font-bold text-white">"ESP32 Dev Module"</td></tr>
+                        <tr class="border-b border-zinc-800 hover:bg-white/5 transition-colors"><td class="py-3 px-4 font-medium text-zinc-400">Upload Speed</td><td class="py-3 px-4 text-white">115200</td></tr>
+                        <tr class="border-b border-zinc-800 hover:bg-white/5 transition-colors"><td class="py-3 px-4 font-medium text-zinc-400">CPU Frequency</td><td class="py-3 px-4 text-white">240MHz</td></tr>
+                        <tr class="border-b border-zinc-800 hover:bg-white/5 transition-colors"><td class="py-3 px-4 font-medium text-zinc-400">Flash Frequency</td><td class="py-3 px-4 text-white">40MHz</td></tr>
+                        <tr class="border-b border-zinc-800 hover:bg-white/5 transition-colors"><td class="py-3 px-4 font-medium text-zinc-400">Flash Mode</td><td class="py-3 px-4 text-white">QIO</td></tr>
+                        <tr class="border-b border-zinc-800 hover:bg-white/5 transition-colors"><td class="py-3 px-4 font-medium text-zinc-400">Flash Size</td><td class="py-3 px-4 text-white">4MB (32Mb)</td></tr>
+                        <tr class="border-b border-zinc-800 hover:bg-white/5 transition-colors"><td class="py-3 px-4 font-medium text-zinc-400">Partition Scheme</td><td class="py-3 px-4 text-white">Default 4MB with spiffs</td></tr>
+                        <tr class="border-b border-zinc-800 hover:bg-white/5 transition-colors"><td class="py-3 px-4 font-medium text-zinc-400">Erase All Flash Before Upload</td><td class="py-3 px-4 font-bold text-danger"><span class="bg-danger/20 border border-danger/50 px-2 py-1 rounded">*** DISABLED ***</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <p class="mt-4 text-sm text-zinc-400"><i class="fa-solid fa-circle-info text-accent mr-1"></i> You do NOT need "Erase All Flash" enabled for normal uploads. It forces a rewrite of the entire flash every time.</p>
+        </section>
+
+        <!-- Phase 3 -->
+        <section id="phase3" class="glass-card scroll-mt-20">
+            <h2 class="text-2xl font-semibold text-white mb-6 border-b border-zinc-700 pb-3"><i class="fa-solid fa-network-wired text-emerald-400 mr-2"></i> Phase 3: Wiring Guide</h2>
+            
+            <!-- Pin Table -->
+            <h3 class="text-xl font-medium text-white mb-4 mt-8">Pin-to-Pin Connections</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                <div class="bg-zinc-900 rounded-lg p-4 border border-zinc-800 flex justify-between items-center shadow-md">
+                    <span class="font-mono font-bold text-orange-400">CS</span>
+                    <i class="fa-solid fa-arrow-right text-zinc-600"></i>
+                    <span class="font-mono text-white bg-zinc-800 px-3 py-1 rounded">GPIO 5</span>
+                </div>
+                <div class="bg-zinc-900 rounded-lg p-4 border border-zinc-800 flex justify-between items-center shadow-md">
+                    <span class="font-mono font-bold text-yellow-400">SCK</span>
+                    <i class="fa-solid fa-arrow-right text-zinc-600"></i>
+                    <span class="font-mono text-white bg-zinc-800 px-3 py-1 rounded">GPIO 18</span>
+                </div>
+                <div class="bg-zinc-900 rounded-lg p-4 border border-zinc-800 flex justify-between items-center shadow-md">
+                    <span class="font-mono font-bold text-green-400">MOSI</span>
+                    <i class="fa-solid fa-arrow-right text-zinc-600"></i>
+                    <span class="font-mono text-white bg-zinc-800 px-3 py-1 rounded">GPIO 23</span>
+                </div>
+                <div class="bg-zinc-900 rounded-lg p-4 border border-zinc-800 flex justify-between items-center shadow-md">
+                    <span class="font-mono font-bold text-blue-400">MISO</span>
+                    <i class="fa-solid fa-arrow-right text-zinc-600"></i>
+                    <span class="font-mono text-white bg-zinc-800 px-3 py-1 rounded">GPIO 19</span>
+                </div>
+                <div class="bg-zinc-900 rounded-lg p-4 border border-zinc-800 flex justify-between items-center ring-1 ring-red-500/30 shadow-md">
+                    <span class="font-mono font-bold text-red-400">VCC</span>
+                    <i class="fa-solid fa-arrow-right text-zinc-600"></i>
+                    <span class="font-mono text-white bg-zinc-800 px-3 py-1 rounded">5V (VIN)</span>
+                </div>
+                <div class="bg-zinc-900 rounded-lg p-4 border border-zinc-800 flex justify-between items-center shadow-md">
+                    <span class="font-mono font-bold text-zinc-400">GND</span>
+                    <i class="fa-solid fa-arrow-right text-zinc-600"></i>
+                    <span class="font-mono text-white bg-zinc-800 px-3 py-1 rounded">GND</span>
+                </div>
+            </div>
+
+            <!-- ESP32 Board Art -->
+            <h3 class="text-xl font-medium text-white mb-4">Board Layout</h3>
+            <div class="ascii-art mb-10 shadow-lg text-emerald-400 custom-scrollbar">
+             ESP32 38-Pin DevKit (Type-C USB on top)
+           ┌──────────────────────────────────────────┐
+           │                <span class="text-zinc-500">USB-C</span>                      │
+           │         ┌──────────────────┐              │
+           │         │    <span class="text-zinc-300">ESP-WROOM-32</span>  │              │
+           │         │                  │              │
+           │         └──────────────────┘              │
+           │                                           │
+<span class="text-zinc-500">Left side</span>  │                                           │  <span class="text-zinc-500">Right side</span>
+           │                                           │
+     3V3 ──┤1                                       38├── GND
+      EN ──┤2                                       37├── <span class="text-green-400 font-bold">GPIO 23 (MOSI)</span> ───► <span class="text-green-400">MOSI on SD</span>
+ GPIO 36 ─┤3                                       36├── GPIO 22
+ GPIO 39 ─┤4                                       35├── GPIO 1 (TX)
+ GPIO 34 ─┤5                                       34├── GPIO 3 (RX)
+ GPIO 35 ─┤6                                       33├── GPIO 21
+ GPIO 32 ─┤7                                       32├── GND
+ GPIO 33 ─┤8                                       31├── <span class="text-blue-400 font-bold">GPIO 19 (MISO)</span> ───► <span class="text-blue-400">MISO on SD</span>
+ GPIO 25 ─┤9                                       30├── <span class="text-yellow-400 font-bold">GPIO 18 (SCK) </span> ───► <span class="text-yellow-400">SCK on SD</span>
+ GPIO 26 ─┤10                                      29├── <span class="text-orange-400 font-bold">GPIO 5  (CS)  </span> ───► <span class="text-orange-400">CS on SD</span>
+ GPIO 27 ─┤11                                      28├── GPIO 17
+ GPIO 14 ─┤12                                      27├── GPIO 16
+ <span class="text-red-500 font-bold">GPIO 12</span> ─┤13  <span class="text-red-500">← DO NOT CONNECT ANYTHING HERE</span>      26├── GPIO 4
+     GND ──┤14                                      25├── GPIO 0
+ GPIO 13 ─┤15                                      24├── GPIO 2
+  GPIO 9 ─┤16                                      23├── GPIO 15
+ GPIO 10 ─┤17                                      22├── GPIO 8
+ GPIO 11 ─┤18                                      21├── GPIO 7
+      <span class="text-red-400 font-bold">5V</span> ──┤19 ────────────────────────────────────► <span class="text-red-400">VCC on SD module</span>
+           │                                           │
+           └──────────────────────────────────────────┘
+
+Pin 14 (GND) ──────────────────────────────────────► <span class="text-zinc-400">GND on SD module</span>
+            </div>
+
+            <!-- Components Detail -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                
+                <!-- Capacitor -->
+                <div class="bg-darker border border-zinc-800 rounded-xl p-5 relative overflow-hidden shadow-lg">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-bl-full -z-10"></div>
+                    <h4 class="font-bold text-white mb-2 flex items-center gap-2 text-lg"><i class="fa-solid fa-battery-half text-blue-400"></i> 100µF Capacitor</h4>
+                    <p class="text-sm text-zinc-400 mb-4 leading-relaxed">Absorbs the SD card's power-on current spike (100-250mA) so it doesn't brownout the ESP32. Solder across VCC and GND at the SD module pins.</p>
+                    
+                    <div class="ascii-art !p-4 !bg-black/80 text-[0.8rem] !border-zinc-700">
+      ┌─────────────┐
+      │  ─ ─ ─ ─ ─  │ ← stripe with minus signs
+      │  100µF 25V  │   is the NEGATIVE side
+      │             │
+      └──┬───────┬──┘
+         │       │
+       <span class="text-red-400 font-bold">SHORT</span>   <span class="text-green-400 font-bold">LONG</span>
+       <span class="text-red-400 font-bold">leg</span>     <span class="text-green-400 font-bold">leg</span>
+         │       │
+        <span class="text-red-400">GND</span>     <span class="text-green-400">VCC (5V)</span>
+                    </div>
+                </div>
+
+                <!-- Resistor -->
+                <div class="bg-darker border border-zinc-800 rounded-xl p-5 relative overflow-hidden shadow-lg">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-bl-full -z-10"></div>
+                    <h4 class="font-bold text-white mb-2 flex items-center gap-2 text-lg"><i class="fa-solid fa-wave-square text-purple-400"></i> 10kΩ Pull-up Resistor</h4>
+                    <p class="text-sm text-zinc-400 mb-4 leading-relaxed">Keeps MISO HIGH when idle, preventing garbage reads. Connect one leg to ESP32 3.3V pin, and the other leg to GPIO 19 (MISO).</p>
+                    
+                    <div class="ascii-art !p-4 !bg-black/80 text-[0.8rem] !border-zinc-700">
+ 3V3 pin ─────────┐
+ on ESP32         │
+            ┌─────┴─────┐
+            │<span class="text-[#8B4513] font-bold">B</span> <span class="text-[#666] font-bold">B</span> <span class="text-[#FFA500] font-bold">O</span> <span class="text-[#FFD700] font-bold">G</span>│ ← Brown-Black-Orange-Gold
+            └─────┬─────┘
+                  │
+ GPIO 19 ─────────┤─────────► blue wire to MISO
+ on ESP32
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Phase 4 -->
+        <section id="phase4" class="glass-card scroll-mt-20">
+            <h2 class="text-2xl font-semibold text-white mb-6 border-b border-zinc-700 pb-3"><i class="fa-solid fa-hard-drive text-blue-400 mr-2"></i> Phase 4: Format the SD Card</h2>
+            
+            <p class="text-zinc-300 mb-4">On your MacBook, insert the 8GB card, open Terminal and run:</p>
+            
+            <div class="code-block-wrapper shadow-lg rounded-lg">
+                <pre class="!m-0"><code class="language-bash"># Find your SD card (Look for your 8GB card — e.g. /dev/disk4)
+diskutil list
+
+# Format it (replace disk4 with YOUR disk number - BE CAREFUL!)
+sudo diskutil eraseDisk FAT32 SDCARD MBRFormat /dev/disk4</code></pre>
+            </div>
+            
+            <div class="mt-6 p-4 bg-zinc-900 border border-zinc-800 rounded-lg flex gap-3">
+                <i class="fa-solid fa-info-circle text-accent mt-1"></i> 
+                <p class="text-sm text-zinc-400">Alternatively, use <strong>Disk Utility</strong> GUI: Select the card > Click "Erase" > Format: <strong>MS-DOS (FAT)</strong> > Scheme: <strong>Master Boot Record</strong>.</p>
+            </div>
+        </section>
+
+        <!-- Phase 5 -->
+        <section id="phase5" class="glass-card scroll-mt-20">
+            <h2 class="text-2xl font-semibold text-white mb-6 border-b border-zinc-700 pb-3"><i class="fa-solid fa-code text-purple-400 mr-2"></i> Phase 5: The Test Sketch</h2>
+            
+            <p class="text-zinc-300 mb-4">Create a new sketch in Arduino IDE, paste this complete isolation test, and click Upload.</p>
+            
+            <div class="code-block-wrapper shadow-lg rounded-lg border border-zinc-700 overflow-hidden">
+<pre class="!m-0 !rounded-none max-h-[500px] overflow-y-auto custom-scrollbar"><code class="language-cpp">/*
+ * ESP32 + Micro SD Card Module — Isolation Test
+ *
+ * Board: "ESP32 Dev Module"
+ *
+ * Wiring:
+ *   SD CS   → GPIO 5
+ *   SD SCK  → GPIO 18
+ *   SD MOSI → GPIO 23
+ *   SD MISO → GPIO 19
+ *   SD VCC  → ESP32 5V/VIN pin
+ *   SD GND  → ESP32 GND
+ *   10kΩ resistor between GPIO 19 and 3V3
+ *   100µF capacitor across SD VCC and GND
+ */
+
+#include "FS.h"
+#include "SD.h"
+#include "SPI.h"
+
+#define SD_CS_PIN 5
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  Serial.println();
+  Serial.println("====================================");
+  Serial.println("  ESP32 SD Card Isolation Test");
+  Serial.println("====================================");
+  Serial.println();
+
+  // Initialize SPI with explicit pins
+  SPI.begin(18, 19, 23, SD_CS_PIN);  // SCK, MISO, MOSI, CS
+
+  // Mount SD card at 1 MHz (slow and reliable)
+  if (!SD.begin(SD_CS_PIN, SPI, 1000000)) {
+    Serial.println("ERROR: Card Mount Failed!");
+    Serial.println();
+    Serial.println("Check:");
+    Serial.println("  1. Is the SD card inserted fully into the module?");
+    Serial.println("  2. Is the card formatted as FAT32 (MS-DOS FAT)?");
+    Serial.println("  3. Is SD module VCC connected to 5V (NOT 3.3V)?");
+    Serial.println("  4. Are all wires secure?");
+    Serial.println("  5. Try a different SD card");
+    return;
+  }
+
+  Serial.println("SUCCESS: SD Card Mounted!");
+  Serial.println();
+
+  // Print card info
+  uint8_t cardType = SD.cardType();
+  Serial.print("Card Type: ");
+  switch (cardType) {
+    case CARD_NONE:    Serial.println("No card"); return;
+    case CARD_MMC:     Serial.println("MMC");     break;
+    case CARD_SD:      Serial.println("SD");      break;
+    case CARD_SDHC:    Serial.println("SDHC");    break;
+    default:           Serial.println("Unknown"); break;
+  }
+
+  uint64_t cardSize = SD.cardSize() / (1024 * 1024);
+  Serial.print("Card Size: ");
+  Serial.print((uint32_t)cardSize);
+  Serial.println(" MB");
+
+  Serial.print("Total Space: ");
+  Serial.print((uint32_t)(SD.totalBytes() / (1024 * 1024)));
+  Serial.println(" MB");
+
+  Serial.print("Used Space: ");
+  Serial.print((uint32_t)(SD.usedBytes() / (1024 * 1024)));
+  Serial.println(" MB");
+  Serial.println();
+
+  // Test write
+  File file = SD.open("/test.txt", FILE_WRITE);
+  if (file) {
+    file.println("Hello from ESP32! SD card is working.");
+    file.close();
+    Serial.println("WRITE TEST: PASSED - /test.txt created");
+  } else {
+    Serial.println("WRITE TEST: FAILED - could not create file");
+  }
+
+  // Test read
+  file = SD.open("/test.txt");
+  if (file) {
+    Serial.print("READ TEST: PASSED - Content: ");
+    while (file.available()) {
+      Serial.write(file.read());
+    }
+    file.close();
+  } else {
+    Serial.println("READ TEST: FAILED - could not open file");
+  }
+
+  // List root directory
+  Serial.println();
+  Serial.println("--- Files on SD Card ---");
+  File root = SD.open("/");
+  File entry;
+  while (entry = root.openNextFile()) {
+    Serial.print("  ");
+    Serial.print(entry.name());
+    if (entry.isDirectory()) {
+      Serial.println("  [FOLDER]");
+    } else {
+      Serial.print("  (");
+      Serial.print(entry.size());
+      Serial.println(" bytes)");
+    }
+    entry.close();
+  }
+  root.close();
+
+  Serial.println();
+  Serial.println("====================================");
+  Serial.println("  ALL TESTS COMPLETE!");
+  Serial.println("====================================");
+}
+
+void loop() {
+  // Nothing — one-shot test
+}</code></pre>
+            </div>
+            
+            <div class="mt-8 bg-zinc-900 border border-zinc-800 rounded-lg p-5">
+                <p class="font-semibold text-white mb-2"><i class="fa-solid fa-terminal text-zinc-400 mr-2"></i> Check the Output:</p>
+                <p class="text-sm text-zinc-400">Open Serial Monitor, set baud rate to <strong class="text-white">115200</strong>, and press the <strong>EN (reset)</strong> button on the ESP32. You should see <code>SUCCESS: SD Card Mounted!</code> and file operations passing.</p>
+            </div>
+        </section>
+
+        <!-- Checklist -->
+        <section id="checklist" class="glass-card scroll-mt-20 mb-20 bg-gradient-to-br from-dark to-zinc-900 border-accent/30 shadow-[0_0_30px_rgba(59,130,246,0.05)]">
+            <h2 class="text-2xl font-semibold text-white mb-6 border-b border-zinc-700 pb-3"><i class="fa-solid fa-check-double text-green-400 mr-2"></i> Final Checklist</h2>
+            
+            <p class="text-zinc-400 mb-6">Click the items below to check them off as you complete your setup.</p>
+            
+            <div class="space-y-3">
+                <label class="check-item group bg-zinc-900/50 hover:bg-zinc-800 rounded-lg shadow-sm border border-zinc-800/50 hover:border-zinc-700">
+                    <input type="checkbox">
+                    <span class="text-lg font-medium text-zinc-300 group-hover:text-white transition-colors">Phase 1: eFuse burned (flash voltage locked to 3.3V)</span>
+                </label>
+                <label class="check-item group bg-zinc-900/50 hover:bg-zinc-800 rounded-lg shadow-sm border border-zinc-800/50 hover:border-zinc-700">
+                    <input type="checkbox">
+                    <span class="text-lg font-medium text-zinc-300 group-hover:text-white transition-colors">Phase 2: Arduino IDE 'Erase All Flash' is DISABLED</span>
+                </label>
+                <label class="check-item group bg-zinc-900/50 hover:bg-zinc-800 rounded-lg shadow-sm border border-zinc-800/50 hover:border-zinc-700">
+                    <input type="checkbox">
+                    <span class="text-lg font-medium text-zinc-300 group-hover:text-white transition-colors">Wiring: VCC connected to 5V/VIN (Red wire)</span>
+                </label>
+                <label class="check-item group bg-zinc-900/50 hover:bg-zinc-800 rounded-lg shadow-sm border border-zinc-800/50 hover:border-zinc-700">
+                    <input type="checkbox">
+                    <span class="text-lg font-medium text-zinc-300 group-hover:text-white transition-colors">Wiring: SCK→18, MISO→19, MOSI→23, CS→5</span>
+                </label>
+                <label class="check-item group bg-zinc-900/50 hover:bg-zinc-800 rounded-lg shadow-sm border border-zinc-800/50 hover:border-zinc-700">
+                    <input type="checkbox">
+                    <span class="text-lg font-medium text-zinc-300 group-hover:text-white transition-colors">Wiring: 100µF Cap placed correctly (long leg + to VCC)</span>
+                </label>
+                <label class="check-item group bg-zinc-900/50 hover:bg-zinc-800 rounded-lg shadow-sm border border-zinc-800/50 hover:border-zinc-700">
+                    <input type="checkbox">
+                    <span class="text-lg font-medium text-zinc-300 group-hover:text-white transition-colors">Wiring: 10kΩ Resistor placed between MISO and 3V3</span>
+                </label>
+                <label class="check-item group bg-zinc-900/50 hover:bg-zinc-800 rounded-lg shadow-sm border border-zinc-800/50 hover:border-zinc-700">
+                    <input type="checkbox">
+                    <span class="text-lg font-medium text-zinc-300 group-hover:text-white transition-colors">Phase 4: SD card freshly formatted as FAT32 / MBR</span>
+                </label>
+                <label class="check-item group bg-zinc-900/50 hover:bg-zinc-800 rounded-lg shadow-sm border border-zinc-800/50 hover:border-zinc-700">
+                    <input type="checkbox">
+                    <span class="text-lg font-medium text-zinc-300 group-hover:text-white transition-colors">Phase 5: Test sketch uploaded and 'SUCCESS' printed in terminal</span>
+                </label>
+            </div>
+            
+        </section>
+
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
+    
+    <script>
+        // Copy to clipboard functionality
+        document.querySelectorAll('.code-block-wrapper').forEach(wrapper => {
+            const pre = wrapper.querySelector('pre');
+            const code = pre.querySelector('code');
+            
+            const btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.innerHTML = '<i class="fa-regular fa-copy mr-1"></i> Copy';
+            
+            btn.addEventListener('click', () => {
+                navigator.clipboard.writeText(code.innerText).then(() => {
+                    btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Copied!';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.innerHTML = '<i class="fa-regular fa-copy mr-1"></i> Copy';
+                        btn.classList.remove('copied');
+                    }, 2000);
+                });
+            });
+            
+            wrapper.appendChild(btn);
+        });
+
+        // Intersection Observer for Active Nav Links
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        const observerOptions = { root: null, rootMargin: '0px', threshold: 0.2 };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    navLinks.forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === '#' + entry.target.id) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => observer.observe(section));
+    </script>
+</body>
+</html>

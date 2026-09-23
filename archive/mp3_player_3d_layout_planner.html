@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>MP3 Player — 3D Layout Planner</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:rgba(22,27,34,.94); --border:#30363d;
+    --text:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --accent2:#3fb950;
+  }
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color:var(--text);}
+  #app{position:fixed;inset:0;}
+  #ui{position:fixed;top:16px;left:16px;width:290px;background:var(--panel);
+    border:1px solid var(--border);border-radius:12px;padding:16px 18px;
+    backdrop-filter:blur(8px);z-index:10;box-shadow:0 8px 30px rgba(0,0,0,.5);}
+  #ui h1{font-size:15px;margin:0 0 2px;color:var(--accent);letter-spacing:.4px;}
+  #ui .sub{font-size:11px;color:var(--muted);margin-bottom:12px;}
+  .row{margin:12px 0;}
+  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.8px;
+    color:var(--muted);margin-bottom:5px;}
+  label.chk{text-transform:none;letter-spacing:0;font-size:13px;display:flex;
+    align-items:center;gap:8px;cursor:pointer;color:var(--text);}
+  label.chk input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer;}
+  select{width:100%;background:#0d1117;color:var(--text);border:1px solid var(--border);
+    border-radius:6px;padding:7px 8px;font-size:13px;outline:none;}
+  input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;}
+  .val{float:right;color:var(--text);font-weight:600;text-transform:none;letter-spacing:0;}
+  #selName{font-size:13px;font-weight:600;color:var(--accent2);margin-bottom:2px;}
+  #posRead{font-size:11px;color:var(--muted);font-family:Consolas,monospace;margin-top:6px;}
+  .hint{margin-top:14px;padding-top:12px;border-top:1px solid var(--border);
+    font-size:11px;line-height:1.75;color:var(--muted);}
+  .hint b{color:var(--text);font-weight:600;}
+  #tooltip{position:fixed;display:none;pointer-events:none;z-index:20;
+    background:rgba(13,17,23,.96);border:1px solid var(--accent);border-radius:6px;
+    padding:6px 10px;font-size:12px;font-family:Consolas,monospace;white-space:nowrap;
+    box-shadow:0 4px 16px rgba(0,0,0,.6);}
+  #tooltip .m{color:var(--accent);font-weight:700;}
+  #tooltip .p{color:var(--accent2);font-weight:700;}
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="ui">
+  <h1>MP3 PLAYER · 3D LAYOUT PLANNER</h1>
+  <div class="sub">Perfboard view — 1 unit = 1 mm · grid = 10 mm</div>
+
+  <div class="row">
+    <label>Selected module</label>
+    <div id="selName">None — click a module</div>
+    <div id="posRead"></div>
+  </div>
+
+  <div class="row">
+    <label>Jump to module</label>
+    <select id="moduleSelect"><option value="">— choose —</option></select>
+  </div>
+
+  <div class="row">
+    <label>Z height <span class="val" id="zVal">0 mm</span></label>
+    <input type="range" id="zSlider" min="0" max="30" step="0.5" value="0">
+  </div>
+
+  <div class="row">
+    <label>Y rotation <span class="val" id="rotVal">0°</span></label>
+    <input type="range" id="rotSlider" min="0" max="360" step="1" value="0">
+  </div>
+
+  <div class="row">
+    <label>Drag speed <span class="val" id="dragVal">40%</span></label>
+    <input type="range" id="dragSlider" min="5" max="100" step="5" value="40">
+  </div>
+
+  <div class="row">
+    <label class="chk"><input type="checkbox" id="snapChk" checked>
+      Snap to 2.54 mm perf grid</label>
+  </div>
+
+  <div class="hint">
+    <b>Drag</b> module to move · <b>Shift</b> = precise<br>
+    <b>Arrow keys</b> nudge 1 mm · <b>Shift</b> = 0.25 mm<br>
+    <b>R</b> rotate 90° · <b>Hover</b> pin → name<br>
+    <b>Left-drag</b> orbit · <b>Right-drag</b> pan · <b>Scroll</b> zoom
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { DragControls } from 'three/addons/controls/DragControls.js';
+
+/* ---------------- renderer / scene / camera ---------------- */
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0d1117);
+
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.5, 2000);
+camera.position.set(150, 175, 195);
+
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+document.getElementById('app').appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.maxPolarAngle = Math.PI * 0.495;
+controls.target.set(0, 0, 0);
+
+/* ---------------- lights + perfboard floor ---------------- */
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const dir = new THREE.DirectionalLight(0xffffff, 1.4);
+dir.position.set(80, 160, 60);
+scene.add(dir);
+const dir2 = new THREE.DirectionalLight(0x88aaff, 0.35);
+dir2.position.set(-100, 80, -80);
+scene.add(dir2);
+
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(600, 600),
+  new THREE.MeshStandardMaterial({ color:0x0d1117, roughness:1 })
+);
+floor.rotation.x = -Math.PI/2;
+floor.position.y = -0.08;
+scene.add(floor);
+
+const grid = new THREE.GridHelper(240, 24, 0x2f81f7, 0x222a35);
+grid.position.y = 0;
+grid.material.transparent = true;
+grid.material.opacity = 0.85;
+scene.add(grid);
+
+/* ---------------- module definitions (from spec) ---------------- */
+const MODULES = [
+  { name:'ESP32 DevKit (38-pin)', w:25, d:50, h:1.6, color:0x1f8a4c, y:12, x:-70, z:-45,
+    pins:[
+      { edge:'left',  names:['CLK','SS0','SD1','P15','P2','P0','P4','P16','P17','P5','P18','P19','GND','P21','RX','TX','P22','P23','GND'] },
+      { edge:'right', names:['5V','GND','SD3','SD2','P13','GND','P12','P14','P27','P26','P25','P33','P32','P35','P34','VN','VP','EN','3V3'] }
+    ],
+    decorate(g){
+      const shield = new THREE.Mesh(new THREE.BoxGeometry(15,1.6,21),
+        new THREE.MeshStandardMaterial({color:0xb8bfc7, metalness:0.85, roughness:0.35}));
+      shield.position.set(0, 1.6, 5); g.add(shield);
+      const usb = new THREE.Mesh(new THREE.BoxGeometry(9,3,4),
+        new THREE.MeshStandardMaterial({color:0xc7ccd4, metalness:0.8, roughness:0.3}));
+      usb.position.set(0, 1.2, -27); g.add(usb);
+    }},
+
+  { name:'1.8" TFT Screen', w:33, d:58, h:1.6, color:0xb71c1c, y:22, x:0, z:-50,
+    pins:[
+      { edge:'left',  names:['LED','SCK','SDA','A0','RESET','CS','GND','VCC'] },
+      { edge:'right', names:['SD_CS','SD_MOSI','SD_MISO','SD_SCK'] }
+    ],
+    decorate(g){
+      const screen = new THREE.Mesh(new THREE.BoxGeometry(27,0.7,36),
+        new THREE.MeshStandardMaterial({color:0x0a0f14, roughness:0.15, metalness:0.4}));
+      screen.position.set(0, 2.0, -6); g.add(screen);
+    }},
+
+  { name:'Micro SD Card Reader', w:22, d:42, h:1.6, color:0x1565c0, y:12, x:55, z:-45,
+    pins:[ { edge:'left', names:['CS','SCK','MOSI','MISO','VCC','GND'] } ],
+    decorate(g){
+      const slot = new THREE.Mesh(new THREE.BoxGeometry(14,2.2,18),
+        new THREE.MeshStandardMaterial({color:0x9aa3ad, metalness:0.85, roughness:0.3}));
+      slot.position.set(0, 1.9, -8); g.add(slot);
+    }},
+
+  { name:'UDA1334A I2S DAC', w:36, d:25, h:1.6, color:0x5e35b1, y:12, x:-70, z:35,
+    pins:[
+      { edge:'top',    names:['ROUT','AGND','LOUT','BCLK','DIN','WSEL','GND','3VO','VIN'] },
+      { edge:'bottom', names:['DEEM','PLL','SFO','MUTE','SF1','SCLK'] }
+    ],
+    decorate(g){
+      const jack = new THREE.Mesh(new THREE.CylinderGeometry(3,3,9,20),
+        new THREE.MeshStandardMaterial({color:0x3a4048, metalness:0.7, roughness:0.4}));
+      jack.rotation.z = Math.PI/2;
+      jack.position.set(-22.5, 1.4, 0); g.add(jack);
+    }},
+
+  { name:'TP4056 USB-C Charger', w:30, d:17, h:1.6, color:0x00695c, y:0, x:0, z:45,
+    pins:[
+      { edge:'left',  names:['IN+','IN-'] },
+      { edge:'right', names:['OUT+','B+','B-','OUT-'] }
+    ],
+    decorate(g){
+      const usb = new THREE.Mesh(new THREE.BoxGeometry(6,3.2,7.5),
+        new THREE.MeshStandardMaterial({color:0xc7ccd4, metalness:0.8, roughness:0.3}));
+      usb.position.set(-18, 1.3, 0); g.add(usb);
+    }},
+
+  { name:'LiPo Battery 40x60', w:40, d:60, h:4, color:0x3b4a6b, y:0, x:55, z:30,
+    pins:[],
+    decorate(g){
+      const label = new THREE.Mesh(new THREE.BoxGeometry(30,0.4,44),
+        new THREE.MeshStandardMaterial({color:0xd7dce2, roughness:0.8}));
+      label.position.set(0, 4.2, 0); g.add(label);
+    }},
+
+  { name:'Tactile Buttons x5', w:54, d:6, h:5, color:0x212121, y:22, x:-5, z:5,
+    customBuild:true, pins:[] }
+];
+
+/* ---------------- builders ---------------- */
+const pinMat = new THREE.MeshStandardMaterial({ color:0xd0d4da, metalness:0.9, roughness:0.28 });
+const pinMeshes = [];
+const pickMeshes = [];
+const moduleGroups = [];
+
+function addPins(group, def){
+  const margin = 3;
+  for (const set of def.pins){
+    const n = set.names.length;
+    const horiz = (set.edge === 'top' || set.edge === 'bottom'); // pins run along X
+    const len = horiz ? def.w : def.d;
+    const geo = horiz
+      ? new THREE.BoxGeometry(1.1, 3.4, 1.7)
+      : new THREE.BoxGeometry(1.7, 3.4, 1.1);
+    for (let i = 0; i < n; i++){
+      const t = n === 1 ? 0.5 : i / (n - 1);
+      const p = -len/2 + margin + t * (len - 2*margin);
+      const pin = new THREE.Mesh(geo, pinMat);
+      if (set.edge === 'left')  pin.position.set(-(def.w/2 + 0.55), -1.0, p);
+      if (set.edge === 'right') pin.position.set( (def.w/2 + 0.55), -1.0, p);
+      if (set.edge === 'top')   pin.position.set(p, -1.0, -(def.d/2 + 0.55));
+      if (set.edge === 'bottom')pin.position.set(p, -1.0,  (def.d/2 + 0.55));
+      pin.userData = { isPin:true, module:def.name, pinName:set.names[i] };
+      group.add(pin);
+      pinMeshes.push(pin);
+    }
+  }
+}
+
+function addPickBox(group, def){
+  const pick = new THREE.Mesh(
+    new THREE.BoxGeometry(def.w + 7, 14, def.d + 7),
+    new THREE.MeshBasicMaterial({ transparent:true, opacity:0, depthWrite:false })
+  );
+  pick.position.y = 2;
+  pick.userData = { group };
+  group.add(pick);
+  pickMeshes.push(pick);
+}
+
+function buildModule(def){
+  const group = new THREE.Group();
+  group.name = def.name;
+
+  const mat = new THREE.MeshStandardMaterial({ color:def.color, roughness:0.6, metalness:0.15 });
+  group.userData.pcbMat = mat;
+
+  if (def.customBuild){
+    for (let i = 0; i < 5; i++){
+      const x = -24 + i * 12;
+      const body = new THREE.Mesh(new THREE.BoxGeometry(6,4,6),
+        new THREE.MeshStandardMaterial({ color:0x1a1a1a, roughness:0.7 }));
+      body.position.set(x, 2, 0); group.add(body);
+      const plunger = new THREE.Mesh(new THREE.CylinderGeometry(1.8,1.8,1.6,16),
+        new THREE.MeshStandardMaterial({ color:0x555c66, roughness:0.5 }));
+      plunger.position.set(x, 4.8, 0); group.add(plunger);
+    }
+  } else {
+    const pcb = new THREE.Mesh(new THREE.BoxGeometry(def.w, def.h, def.d), mat);
+    pcb.position.y = def.h/2;
+    group.add(pcb);
+    addPins(group, def);
+    if (def.decorate) def.decorate(group);
+  }
+
+  addPickBox(group, def);
+  group.position.set(def.x, def.y, def.z);
+  scene.add(group);
+  moduleGroups.push(group);
+  return group;
+}
+
+MODULES.forEach(buildModule);
+
+/* ---------------- snapping + precision helpers ---------------- */
+const PITCH = 2.54;
+const snapChk = document.getElementById('snapChk');
+function snap(v){ return snapChk.checked ? Math.round(v / PITCH) * PITCH : v; }
+function snapGroup(g){
+  g.position.x = snap(g.position.x);
+  g.position.z = snap(g.position.z);
+}
+
+/* ---------------- DragControls (moves whole group) ---------------- */
+const drag = new DragControls(pickMeshes, camera, renderer.domElement);
+const tooltip = document.getElementById('tooltip');
+let precision = false;
+
+drag.addEventListener('dragstart', () => { controls.enabled = false; tooltip.style.display='none'; });
+drag.addEventListener('drag', (e) => {
+  const g = e.object.userData.group;
+  // pick-mesh offset is in the group's local space → rotate into world space
+  const d = e.object.position.clone().applyQuaternion(g.quaternion);
+  const speed = (+document.getElementById('dragSlider').value / 100) * (precision ? 0.15 : 1);
+  d.multiplyScalar(speed);
+  g.position.x += d.x;
+  g.position.z += d.z;
+  e.object.position.set(0, 0, 0);
+  snapGroup(g);
+});
+drag.addEventListener('dragend', (e) => {
+  controls.enabled = true;
+  snapGroup(e.object.userData.group);
+  selectModule(e.object.userData.group);
+});
+
+/* ---------------- selection + UI ---------------- */
+let selected = null;
+const selName  = document.getElementById('selName');
+const posRead  = document.getElementById('posRead');
+const zSlider  = document.getElementById('zSlider');
+const rotSlider= document.getElementById('rotSlider');
+const zVal     = document.getElementById('zVal');
+const rotVal   = document.getElementById('rotVal');
+const selectEl = document.getElementById('moduleSelect');
+
+MODULES.forEach(m => {
+  const o = document.createElement('option');
+  o.value = o.textContent = m.name;
+  selectEl.appendChild(o);
+});
+
+function selectModule(g){
+  if (selected) selected.userData.pcbMat.emissive.setHex(0x000000);
+  selected = g;
+  if (g){
+    g.userData.pcbMat.emissive.copy(g.userData.pcbMat.color).multiplyScalar(0.4);
+    selName.textContent = g.name;
+    selectEl.value = g.name;
+    zSlider.value = g.position.y;
+    rotSlider.value = Math.round(THREE.MathUtils.radToDeg(g.rotation.y)) % 360;
+    zVal.textContent = (+zSlider.value).toFixed(1) + ' mm';
+    rotVal.textContent = rotSlider.value + '°';
+  } else {
+    selName.textContent = 'None — click a module';
+    posRead.textContent = '';
+    selectEl.value = '';
+  }
+}
+
+zSlider.addEventListener('input', () => {
+  if (!selected) return;
+  selected.position.y = +zSlider.value;
+  zVal.textContent = (+zSlider.value).toFixed(1) + ' mm';
+});
+rotSlider.addEventListener('input', () => {
+  if (!selected) return;
+  selected.rotation.y = THREE.MathUtils.degToRad(+rotSlider.value);
+  rotVal.textContent = rotSlider.value + '°';
+});
+selectEl.addEventListener('change', () => {
+  const g = moduleGroups.find(g => g.name === selectEl.value);
+  selectModule(g || null);
+});
+document.getElementById('dragSlider').addEventListener('input', (e) => {
+  document.getElementById('dragVal').textContent = e.target.value + '%';
+});
+
+/* ---------------- keyboard: nudge / rotate / precision ---------------- */
+function nudge(dx, dz){
+  if (!selected) return;
+  const s = precision ? 0.25 : 1;
+  selected.position.x = snap(selected.position.x + dx * s);
+  selected.position.z = snap(selected.position.z + dz * s);
+}
+addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
+  if (e.key === 'Shift'){ precision = true; return; }
+  const step = PITCH; // one perf hole per press
+  switch (e.key){
+    case 'ArrowUp':    e.preventDefault(); nudge(0, -step); break;
+    case 'ArrowDown':  e.preventDefault(); nudge(0,  step); break;
+    case 'ArrowLeft':  e.preventDefault(); nudge(-step, 0); break;
+    case 'ArrowRight': e.preventDefault(); nudge( step, 0); break;
+    case 'r': case 'R':
+      if (selected){
+        selected.rotation.y += Math.PI / 2;
+        rotSlider.value = Math.round(THREE.MathUtils.radToDeg(selected.rotation.y)) % 360;
+        rotVal.textContent = rotSlider.value + '°';
+      }
+      break;
+  }
+});
+addEventListener('keyup', (e) => { if (e.key === 'Shift') precision = false; });
+
+/* ---------------- click-to-select (raycaster) ---------------- */
+const raycaster = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+let downPos = null;
+
+function setNDC(e){
+  ndc.x =  (e.clientX / innerWidth)  * 2 - 1;
+  ndc.y = -(e.clientY / innerHeight) * 2 + 1;
+}
+
+renderer.domElement.addEventListener('pointerdown', e => { downPos = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!downPos) return;
+  const moved = Math.hypot(e.clientX - downPos[0], e.clientY - downPos[1]);
+  downPos = null;
+  if (moved > 5) return;                       // it was a drag, not a click
+  setNDC(e);
+  raycaster.setFromCamera(ndc, camera);
+  const hits = raycaster.intersectObjects(pickMeshes, false);
+  selectModule(hits.length ? hits[0].object.userData.group : null);
+});
+
+/* ---------------- pin hover tooltip ---------------- */
+renderer.domElement.addEventListener('pointermove', e => {
+  if (drag.dragging){ tooltip.style.display='none'; return; }
+  setNDC(e);
+  raycaster.setFromCamera(ndc, camera);
+  const pinHits = raycaster.intersectObjects(pinMeshes, false);
+  if (pinHits.length){
+    const ud = pinHits[0].object.userData;
+    tooltip.innerHTML = `<span class="m">${ud.module}</span> &nbsp;·&nbsp; pin: <span class="p">${ud.pinName}</span>`;
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.clientX + 16) + 'px';
+    tooltip.style.top  = (e.clientY + 16) + 'px';
+    return;
+  }
+  const modHits = raycaster.intersectObjects(pickMeshes, false);
+  if (modHits.length){
+    tooltip.innerHTML = `<span class="m">${modHits[0].object.userData.group.name}</span> &nbsp;·&nbsp; click to select`;
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.clientX + 16) + 'px';
+    tooltip.style.top  = (e.clientY + 16) + 'px';
+  } else {
+    tooltip.style.display = 'none';
+  }
+});
+renderer.domElement.addEventListener('pointerleave', () => tooltip.style.display='none');
+
+/* ---------------- loop / resize ---------------- */
+function animate(){
+  requestAnimationFrame(animate);
+  if (selected){
+    posRead.textContent = `X ${selected.position.x.toFixed(2)}  ·  Z ${selected.position.z.toFixed(2)}  ·  Y ${selected.position.y.toFixed(1)}`;
+  }
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
