@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced 3D MP3 Hardware Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0f111a; color: white; font-family: 'Inter', sans-serif; }
+        #canvas-container { width: 100vw; height: 100vh; display: block; }
+        #ui-layer { position: absolute; top: 0; left: 0; pointer-events: none; width: 100%; height: 100%; padding: 20px; box-sizing: border-box; }
+        .panel { pointer-events: auto; background: rgba(15, 17, 26, 0.85); border: 1px solid #3f3f46; border-radius: 8px; padding: 15px; backdrop-filter: blur(4px); }
+        .control-group { margin-top: 10px; }
+        label { display: block; font-size: 0.8rem; color: #a1a1aa; margin-bottom: 5px; }
+        input[type=range] { width: 100%; accent-color: #8b5cf6; }
+        #tooltip { position: absolute; background: rgba(0,0,0,0.9); border: 1px solid #8b5cf6; color: #fff; padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; pointer-events: none; display: none; z-index: 100; transform: translate(10px, 10px); white-space: nowrap; }
+    </style>
+    <!-- Import maps polyfill -->
+    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="tooltip">Pin Name</div>
+    <div id="canvas-container"></div>
+    
+    <div id="ui-layer" class="flex justify-between">
+        <div class="panel w-72 shadow-xl">
+            <h1 class="text-lg font-bold text-white mb-1"><i class="fa-solid fa-microchip text-blue-400 mr-2"></i> Advanced 3D Planner</h1>
+            <p class="text-xs text-zinc-400 mb-4">Drag modules on X/Z. Hover over pins to see their exact names.</p>
+            
+            <div id="selected-info" class="hidden mt-4 p-3 bg-black/50 rounded border border-zinc-700">
+                <h3 id="mod-name" class="font-bold text-sm text-blue-400">Select a module</h3>
+                <p id="mod-dims" class="text-xs text-zinc-400 mb-3">--</p>
+                
+                <div class="control-group">
+                    <label>Z-Axis Layer (Height): <span id="height-val" class="text-white">0</span> mm</label>
+                    <input type="range" id="height-slider" min="0" max="40" step="1" value="0">
+                </div>
+                <div class="control-group mt-3">
+                    <label>Rotation: <span id="rot-val" class="text-white">0</span>°</label>
+                    <input type="range" id="rot-slider" min="0" max="360" step="90" value="0">
+                </div>
+            </div>
+            
+            <button id="reset-cam" class="mt-4 w-full bg-zinc-800 hover:bg-blue-600 text-white text-xs font-bold py-2 rounded transition">
+                Reset Camera
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { DragControls } from 'three/addons/controls/DragControls.js';
+
+        // --- 1. Scene Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color('#0f111a');
+        
+        const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 1000);
+        camera.position.set(0, 150, 150);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(50, 150, 50);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        const grid = new THREE.GridHelper(200, 40, 0x444455, 0x222233);
+        grid.position.y = -0.1; // Slightly below zero to avoid clipping
+        scene.add(grid);
+
+        // --- 2. Advanced Module Data with Exact Pins ---
+        const modulesData = [
+            {
+                id: 'esp32', name: 'ESP32 38-Pin', w: 25, d: 50, h: 3, color: '#10b981', layer: 15,
+                pinGroups: [
+                    { edge: 'left', count: 19, names: ['CLK','SS0','SD1','P15','P2','P0','P4','P16','P17','P5 (SD_CS)','P18 (SCK)','P19 (MISO)','GND','P21','RX','TX','P22','P23 (MOSI)','GND'] },
+                    { edge: 'right', count: 19, names: ['5V (VIN)','GND','SD3','SD2','P13','GND','P12','P14','P27','P26','P25','P33','P32','P35','P34','VN','VP','EN','3V3'] }
+                ]
+            },
+            {
+                id: 'tft', name: '1.8" TFT Screen', w: 33, d: 58, h: 2, color: '#ef4444', layer: 25,
+                pinGroups: [
+                    { edge: 'left', count: 8, names: ['LED','SCK','SDA (MOSI)','A0 (DC)','RESET','CS','GND','VCC'] },
+                    { edge: 'right', count: 4, names: ['SD_CS','SD_MOSI','SD_MISO','SD_SCK'] }
+                ]
+            },
+            {
+                id: 'sd', name: 'Micro SD Module', w: 22, d: 42, h: 2, color: '#3b82f6', layer: 15,
+                pinGroups: [
+                    { edge: 'left', count: 6, names: ['CS','SCK','MOSI','MISO','VCC (5V)','GND'] }
+                ]
+            },
+            {
+                id: 'dac', name: 'UDA1334A DAC', w: 25, d: 36, h: 2, color: '#a855f7', layer: 15,
+                pinGroups: [
+                    { edge: 'top', count: 9, names: ['ROUT','AGND','LOUT','BCLK','DIN','WSEL','GND','3VO','VIN'] },
+                    { edge: 'bottom', count: 6, names: ['DEEM','PLL','SFO','MUTE','SF1','SCLK'] }
+                ]
+            },
+            {
+                id: 'tp4056', name: 'TP4056 Charger', w: 17, d: 30, h: 1.5, color: '#f59e0b', layer: 2,
+                pinGroups: [
+                    { edge: 'left', count: 2, names: ['IN+','IN-'] },
+                    { edge: 'right', count: 4, names: ['OUT+','B+','B-','OUT-'] }
+                ]
+            },
+            {
+                id: 'batt', name: 'LiPo Battery 40x60', w: 40, d: 60, h: 4, color: '#0ea5e9', layer: 2,
+                pinGroups: [] // No rigid pins
+            }
+        ];
+
+        const objects = [];
+        const pinMeshes = []; // Store pins for Raycaster hovering
+        
+        function createTextTexture(text, bgColor) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, 256, 256);
+            
+            // PCB circuit styling (fake traces)
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(20,20); ctx.lineTo(100,100); ctx.lineTo(236,100); ctx.stroke();
+            
+            ctx.font = 'bold 36px Arial';
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            
+            const words = text.split(' ');
+            if(words.length > 1) {
+                ctx.fillText(words[0], 128, 100);
+                ctx.fillText(words.slice(1).join(' '), 128, 150);
+            } else {
+                ctx.fillText(text, 128, 128);
+            }
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // --- 3. Build Detailed Modules with Pins ---
+        const pinMat = new THREE.MeshPhongMaterial({ color: 0xffd700 }); // Gold pins
+        
+        modulesData.forEach((mod, index) => {
+            const group = new THREE.Group();
+            
+            // Main PCB Board
+            const pcbGeo = new THREE.BoxGeometry(mod.w, mod.h, mod.d);
+            const tex = createTextTexture(mod.name, mod.color);
+            const pcbMatTop = new THREE.MeshPhongMaterial({ map: tex });
+            const pcbMatSides = new THREE.MeshPhongMaterial({ color: mod.color });
+            const pcbMesh = new THREE.Mesh(pcbGeo, [pcbMatSides, pcbMatSides, pcbMatTop, pcbMatSides, pcbMatSides, pcbMatSides]);
+            
+            pcbMesh.castShadow = true;
+            pcbMesh.receiveShadow = true;
+            group.add(pcbMesh);
+
+            // Add Pins based on edge
+            if (mod.pinGroups) {
+                mod.pinGroups.forEach(pg => {
+                    const pinSize = 1.2;
+                    // Calculate spacing
+                    const edgeLength = (pg.edge === 'left' || pg.edge === 'right') ? mod.d : mod.w;
+                    const spacing = (edgeLength - 4) / (pg.count - 1 || 1); // 2mm padding on edges
+                    const startPos = -(edgeLength / 2) + 2;
+
+                    for(let i=0; i<pg.count; i++) {
+                        const pinGeo = new THREE.BoxGeometry(pinSize, mod.h + 2, pinSize);
+                        const pinMesh = new THREE.Mesh(pinGeo, pinMat);
+                        
+                        let px = 0, pz = 0;
+                        if (pg.edge === 'left') { px = -(mod.w/2) - (pinSize/2); pz = startPos + (i * spacing); }
+                        else if (pg.edge === 'right') { px = (mod.w/2) + (pinSize/2); pz = startPos + (i * spacing); }
+                        else if (pg.edge === 'top') { pz = -(mod.d/2) - (pinSize/2); px = startPos + (i * spacing); }
+                        else if (pg.edge === 'bottom') { pz = (mod.d/2) + (pinSize/2); px = startPos + (i * spacing); }
+                        
+                        pinMesh.position.set(px, 0, pz);
+                        
+                        // Store pin info for raycaster tooltip
+                        pinMesh.userData = { isPin: true, name: pg.names[i], module: mod.name };
+                        pinMeshes.push(pinMesh);
+                        group.add(pinMesh);
+                    }
+                });
+            }
+
+            // Position group
+            group.position.set((index * 45) - 100, mod.layer + (mod.h/2), 0);
+            group.userData = { id: mod.id, name: mod.name, dims: `${mod.w}mm x ${mod.d}mm`, baseLayer: mod.layer, isInteractive: true };
+            
+            // Add an invisible box bounding the whole group for DragControls to grip
+            const box = new THREE.Box3().setFromObject(group);
+            const size = box.getSize(new THREE.Vector3());
+            const hitGeo = new THREE.BoxGeometry(size.x, size.y, size.z);
+            const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+            const hitMesh = new THREE.Mesh(hitGeo, hitMat);
+            group.add(hitMesh);
+            
+            scene.add(group);
+            objects.push(group);
+        });
+
+        // --- 4. Controls & Raycaster Tooltips ---
+        const orbit = new OrbitControls(camera, renderer.domElement);
+        orbit.enableDamping = true;
+        orbit.maxPolarAngle = Math.PI / 2 - 0.05;
+
+        const dragControls = new DragControls(objects, camera, renderer.domElement);
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const tooltip = document.getElementById('tooltip');
+        
+        let selectedObject = null;
+        let hoveredPin = null;
+
+        // Tooltip logic on mousemove
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            
+            tooltip.style.left = e.clientX + 'px';
+            tooltip.style.top = e.clientY + 'px';
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(pinMeshes);
+            
+            if (intersects.length > 0) {
+                const pin = intersects[0].object;
+                tooltip.style.display = 'block';
+                tooltip.innerHTML = `<strong>${pin.userData.module}</strong><br>Pin: <span style="color:#a855f7">${pin.userData.name}</span>`;
+            } else {
+                tooltip.style.display = 'none';
+            }
+        });
+
+        // Drag Logic
+        const uiPanel = document.getElementById('selected-info');
+        const hSlider = document.getElementById('height-slider');
+
+        dragControls.addEventListener('dragstart', function (event) {
+            orbit.enabled = false;
+            selectedObject = event.object.parent; // Dragging the hitbox gets the group
+            selectedObject.userData.lastY = selectedObject.position.y;
+            selectedObject.position.y += 5; // Lift up
+            
+            uiPanel.classList.remove('hidden');
+            document.getElementById('mod-name').innerText = selectedObject.userData.name;
+            document.getElementById('mod-dims').innerText = selectedObject.userData.dims;
+            
+            hSlider.value = selectedObject.userData.lastY;
+            document.getElementById('height-val').innerText = hSlider.value;
+            
+            document.getElementById('rot-slider').value = THREE.MathUtils.radToDeg(selectedObject.rotation.y);
+            document.getElementById('rot-val').innerText = document.getElementById('rot-slider').value;
+        });
+
+        dragControls.addEventListener('drag', function(event) {
+            event.object.parent.position.y = event.object.parent.userData.lastY + 5; // Lock Y axis
+        });
+
+        dragControls.addEventListener('dragend', function (event) {
+            orbit.enabled = true;
+            event.object.parent.position.y = event.object.parent.userData.lastY; // Drop down
+        });
+        
+        // Slider Logic
+        hSlider.addEventListener('input', (e) => {
+            if(!selectedObject) return;
+            const yPos = parseFloat(e.target.value);
+            document.getElementById('height-val').innerText = yPos;
+            selectedObject.position.y = yPos;
+            selectedObject.userData.lastY = yPos;
+        });
+        
+        document.getElementById('rot-slider').addEventListener('input', (e) => {
+            if(!selectedObject) return;
+            const deg = parseFloat(e.target.value);
+            document.getElementById('rot-val').innerText = deg;
+            selectedObject.rotation.y = THREE.MathUtils.degToRad(deg);
+        });
+        
+        document.getElementById('reset-cam').addEventListener('click', () => {
+            camera.position.set(0, 150, 150); orbit.target.set(0,0,0);
+        });
+
+        // --- 5. Render Loop ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            orbit.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>

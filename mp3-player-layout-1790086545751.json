@@ -1,0 +1,1827 @@
+{
+  "meta": {
+    "tool": "MP3 Player 3D Layout & Wiring Planner",
+    "units": "mm",
+    "coordinateSystem": "World axes: X = left/right, Y = stack height (up), Z = front/back. Pin \"world\" coordinates already include the module's position and Y-rotation.",
+    "gridPitchMm": 2.54,
+    "exportedAt": "2026-09-22T14:15:45.748Z",
+    "note": "coordinateSource \"evenly-spaced-estimate\" means the source spec only gave pin order for that edge, not per-pin mm values; treat those X/Z offsets as approximate. Several modules have more than one pin with the same label (e.g. the ESP32 has four GND pins) \u2014 when proposing new connections, reference pins by their unique \"id\" field, not just by label, to avoid picking the wrong one."
+  },
+  "modules": [
+    {
+      "id": "esp32",
+      "name": "ESP32 38-Pin DevKit (CP2102, Type-C)",
+      "layer": "Middle",
+      "boardSize": {
+        "w": 25,
+        "d": 50,
+        "h": 1.6
+      },
+      "position": {
+        "x": -43.18,
+        "y": 26,
+        "z": -22.86
+      },
+      "rotationYDeg": 0,
+      "pins": [
+        {
+          "id": "esp32#left#0",
+          "label": "CLK",
+          "gpio": 6,
+          "edge": "left",
+          "status": "caution",
+          "note": "Internal flash \u2014 do not use",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": -45.72
+          }
+        },
+        {
+          "id": "esp32#left#1",
+          "label": "SD0",
+          "gpio": 7,
+          "edge": "left",
+          "status": "caution",
+          "note": "Internal flash \u2014 do not use",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": -43.18
+          }
+        },
+        {
+          "id": "esp32#left#2",
+          "label": "SD1",
+          "gpio": 8,
+          "edge": "left",
+          "status": "caution",
+          "note": "Internal flash \u2014 do not use",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": -40.64
+          }
+        },
+        {
+          "id": "esp32#left#3",
+          "label": "P15",
+          "gpio": 15,
+          "edge": "left",
+          "status": "ok",
+          "note": "Strapping pin",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": -38.1
+          }
+        },
+        {
+          "id": "esp32#left#4",
+          "label": "P2",
+          "gpio": 2,
+          "edge": "left",
+          "status": "ok",
+          "note": "Strapping pin",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": -35.56
+          }
+        },
+        {
+          "id": "esp32#left#5",
+          "label": "P0",
+          "gpio": 0,
+          "edge": "left",
+          "status": "caution",
+          "note": "Strapping pin, BOOT button",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": -33.02
+          }
+        },
+        {
+          "id": "esp32#left#6",
+          "label": "P4",
+          "gpio": 4,
+          "edge": "left",
+          "status": "ok",
+          "note": "",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": -30.48
+          }
+        },
+        {
+          "id": "esp32#left#7",
+          "label": "P16",
+          "gpio": 16,
+          "edge": "left",
+          "status": "ok",
+          "note": "",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": -27.94
+          }
+        },
+        {
+          "id": "esp32#left#8",
+          "label": "P17",
+          "gpio": 17,
+          "edge": "left",
+          "status": "ok",
+          "note": "",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": -25.4
+          }
+        },
+        {
+          "id": "esp32#left#9",
+          "label": "P5",
+          "gpio": 5,
+          "edge": "left",
+          "status": "ok",
+          "note": "Strapping pin \u2014 used as SD CS",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": -22.86
+          }
+        },
+        {
+          "id": "esp32#left#10",
+          "label": "P18",
+          "gpio": 18,
+          "edge": "left",
+          "status": "ok",
+          "note": "VSPI SCK",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": -20.32
+          }
+        },
+        {
+          "id": "esp32#left#11",
+          "label": "P19",
+          "gpio": 19,
+          "edge": "left",
+          "status": "ok",
+          "note": "VSPI MISO",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": -17.78
+          }
+        },
+        {
+          "id": "esp32#left#12",
+          "label": "GND",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "Ground",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": -15.24
+          }
+        },
+        {
+          "id": "esp32#left#13",
+          "label": "P21",
+          "gpio": 21,
+          "edge": "left",
+          "status": "ok",
+          "note": "I2C SDA default",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": -12.7
+          }
+        },
+        {
+          "id": "esp32#left#14",
+          "label": "RX",
+          "gpio": 3,
+          "edge": "left",
+          "status": "ok",
+          "note": "UART0 RX",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": -10.16
+          }
+        },
+        {
+          "id": "esp32#left#15",
+          "label": "TX",
+          "gpio": 1,
+          "edge": "left",
+          "status": "ok",
+          "note": "UART0 TX",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": -7.62
+          }
+        },
+        {
+          "id": "esp32#left#16",
+          "label": "P22",
+          "gpio": 22,
+          "edge": "left",
+          "status": "ok",
+          "note": "I2C SCL default",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": -5.08
+          }
+        },
+        {
+          "id": "esp32#left#17",
+          "label": "P23",
+          "gpio": 23,
+          "edge": "left",
+          "status": "ok",
+          "note": "VSPI MOSI",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": -2.54
+          }
+        },
+        {
+          "id": "esp32#left#18",
+          "label": "GND",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "Ground",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -56.23,
+            "y": 24.4,
+            "z": 0
+          }
+        },
+        {
+          "id": "esp32#right#0",
+          "label": "5V",
+          "gpio": null,
+          "edge": "right",
+          "status": "ok",
+          "note": "5V in/out (VIN)",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": -45.72
+          }
+        },
+        {
+          "id": "esp32#right#1",
+          "label": "GND",
+          "gpio": null,
+          "edge": "right",
+          "status": "caution",
+          "note": "Verify with continuity test",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": -43.18
+          }
+        },
+        {
+          "id": "esp32#right#2",
+          "label": "SD3",
+          "gpio": 10,
+          "edge": "right",
+          "status": "caution",
+          "note": "Internal flash \u2014 do not use",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": -40.64
+          }
+        },
+        {
+          "id": "esp32#right#3",
+          "label": "SD2",
+          "gpio": 9,
+          "edge": "right",
+          "status": "caution",
+          "note": "Internal flash \u2014 do not use",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": -38.1
+          }
+        },
+        {
+          "id": "esp32#right#4",
+          "label": "P13",
+          "gpio": 13,
+          "edge": "right",
+          "status": "ok",
+          "note": "",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": -35.56
+          }
+        },
+        {
+          "id": "esp32#right#5",
+          "label": "GND",
+          "gpio": null,
+          "edge": "right",
+          "status": "ok",
+          "note": "Ground",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": -33.02
+          }
+        },
+        {
+          "id": "esp32#right#6",
+          "label": "P12",
+          "gpio": 12,
+          "edge": "right",
+          "status": "caution",
+          "note": "Strapping pin",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": -30.48
+          }
+        },
+        {
+          "id": "esp32#right#7",
+          "label": "P14",
+          "gpio": 14,
+          "edge": "right",
+          "status": "ok",
+          "note": "",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": -27.94
+          }
+        },
+        {
+          "id": "esp32#right#8",
+          "label": "P27",
+          "gpio": 27,
+          "edge": "right",
+          "status": "ok",
+          "note": "",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": -25.4
+          }
+        },
+        {
+          "id": "esp32#right#9",
+          "label": "P26",
+          "gpio": 26,
+          "edge": "right",
+          "status": "ok",
+          "note": "",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": -22.86
+          }
+        },
+        {
+          "id": "esp32#right#10",
+          "label": "P25",
+          "gpio": 25,
+          "edge": "right",
+          "status": "ok",
+          "note": "",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": -20.32
+          }
+        },
+        {
+          "id": "esp32#right#11",
+          "label": "P33",
+          "gpio": 33,
+          "edge": "right",
+          "status": "ok",
+          "note": "",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": -17.78
+          }
+        },
+        {
+          "id": "esp32#right#12",
+          "label": "P32",
+          "gpio": 32,
+          "edge": "right",
+          "status": "ok",
+          "note": "",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": -15.24
+          }
+        },
+        {
+          "id": "esp32#right#13",
+          "label": "P35",
+          "gpio": 35,
+          "edge": "right",
+          "status": "caution",
+          "note": "Input only",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": -12.7
+          }
+        },
+        {
+          "id": "esp32#right#14",
+          "label": "P34",
+          "gpio": 34,
+          "edge": "right",
+          "status": "caution",
+          "note": "Input only",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": -10.16
+          }
+        },
+        {
+          "id": "esp32#right#15",
+          "label": "VN",
+          "gpio": 39,
+          "edge": "right",
+          "status": "caution",
+          "note": "Input only (SVN)",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": -7.62
+          }
+        },
+        {
+          "id": "esp32#right#16",
+          "label": "VP",
+          "gpio": 36,
+          "edge": "right",
+          "status": "caution",
+          "note": "Input only (SVP)",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": -5.08
+          }
+        },
+        {
+          "id": "esp32#right#17",
+          "label": "EN",
+          "gpio": null,
+          "edge": "right",
+          "status": "ok",
+          "note": "Reset / enable",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": -2.54
+          }
+        },
+        {
+          "id": "esp32#right#18",
+          "label": "3V3",
+          "gpio": null,
+          "edge": "right",
+          "status": "ok",
+          "note": "3.3V out",
+          "coordinateSource": "exact-from-spec",
+          "world": {
+            "x": -30.13,
+            "y": 24.4,
+            "z": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "tft",
+      "name": "1.8\" Color TFT LCD Screen",
+      "layer": "Top",
+      "boardSize": {
+        "w": 33,
+        "d": 58,
+        "h": 1.6
+      },
+      "position": {
+        "x": -88.9,
+        "y": 31,
+        "z": -12.7
+      },
+      "rotationYDeg": 90,
+      "pins": [
+        {
+          "id": "tft#left#0",
+          "label": "LED",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "Backlight power (3.3V/5V)",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -114.9,
+            "y": 32.75,
+            "z": 3.8
+          }
+        },
+        {
+          "id": "tft#left#1",
+          "label": "SCK",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "SPI clock",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -107.471,
+            "y": 32.75,
+            "z": 3.8
+          }
+        },
+        {
+          "id": "tft#left#2",
+          "label": "SDA",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "SPI data (MOSI)",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -100.043,
+            "y": 32.75,
+            "z": 3.8
+          }
+        },
+        {
+          "id": "tft#left#3",
+          "label": "A0",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "Data/command (DC)",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -92.614,
+            "y": 32.75,
+            "z": 3.8
+          }
+        },
+        {
+          "id": "tft#left#4",
+          "label": "RESET",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "Display reset",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -85.186,
+            "y": 32.75,
+            "z": 3.8
+          }
+        },
+        {
+          "id": "tft#left#5",
+          "label": "CS",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "Display chip select",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -77.757,
+            "y": 32.75,
+            "z": 3.8
+          }
+        },
+        {
+          "id": "tft#left#6",
+          "label": "GND",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "Ground",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -70.329,
+            "y": 32.75,
+            "z": 3.8
+          }
+        },
+        {
+          "id": "tft#left#7",
+          "label": "VCC",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "System power (3.3V/5V)",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -62.9,
+            "y": 32.75,
+            "z": 3.8
+          }
+        },
+        {
+          "id": "tft#right#0",
+          "label": "SD_CS",
+          "gpio": null,
+          "edge": "right",
+          "status": "ok",
+          "note": "SD chip select",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -114.9,
+            "y": 32.75,
+            "z": -29.2
+          }
+        },
+        {
+          "id": "tft#right#1",
+          "label": "SD_MOSI",
+          "gpio": null,
+          "edge": "right",
+          "status": "ok",
+          "note": "SD SPI data in",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -97.567,
+            "y": 32.75,
+            "z": -29.2
+          }
+        },
+        {
+          "id": "tft#right#2",
+          "label": "SD_MISO",
+          "gpio": null,
+          "edge": "right",
+          "status": "ok",
+          "note": "SD SPI data out",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -80.233,
+            "y": 32.75,
+            "z": -29.2
+          }
+        },
+        {
+          "id": "tft#right#3",
+          "label": "SD_SCK",
+          "gpio": null,
+          "edge": "right",
+          "status": "ok",
+          "note": "SD SPI clock",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -62.9,
+            "y": 32.75,
+            "z": -29.2
+          }
+        }
+      ]
+    },
+    {
+      "id": "sdReader",
+      "name": "Micro SD Card Reader Module (separate)",
+      "layer": "Flexible",
+      "boardSize": {
+        "w": 22,
+        "d": 42,
+        "h": 1.6
+      },
+      "position": {
+        "x": 60,
+        "y": 12,
+        "z": -45
+      },
+      "rotationYDeg": 0,
+      "pins": [
+        {
+          "id": "sdReader#left#0",
+          "label": "CS",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "SPI chip select",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": 48.45,
+            "y": 10.4,
+            "z": -63
+          }
+        },
+        {
+          "id": "sdReader#left#1",
+          "label": "SCK",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "SPI clock",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": 48.45,
+            "y": 10.4,
+            "z": -55.8
+          }
+        },
+        {
+          "id": "sdReader#left#2",
+          "label": "MOSI",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "SPI MOSI",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": 48.45,
+            "y": 10.4,
+            "z": -48.6
+          }
+        },
+        {
+          "id": "sdReader#left#3",
+          "label": "MISO",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "SPI MISO",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": 48.45,
+            "y": 10.4,
+            "z": -41.4
+          }
+        },
+        {
+          "id": "sdReader#left#4",
+          "label": "VCC",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "5V / 3.3V supply",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": 48.45,
+            "y": 10.4,
+            "z": -34.2
+          }
+        },
+        {
+          "id": "sdReader#left#5",
+          "label": "GND",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "Ground",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": 48.45,
+            "y": 10.4,
+            "z": -27
+          }
+        }
+      ]
+    },
+    {
+      "id": "dac",
+      "name": "UDA1334A I2S DAC (Audio Module)",
+      "layer": "Flexible",
+      "boardSize": {
+        "w": 36,
+        "d": 25,
+        "h": 1.6
+      },
+      "position": {
+        "x": -12.7,
+        "y": 12,
+        "z": 17.78
+      },
+      "rotationYDeg": 0,
+      "pins": [
+        {
+          "id": "dac#top#0",
+          "label": "SCLK",
+          "gpio": null,
+          "edge": "top",
+          "status": "ok",
+          "note": "System clock (optional)",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -27.7,
+            "y": 13.75,
+            "z": 5.28
+          }
+        },
+        {
+          "id": "dac#top#1",
+          "label": "SF1",
+          "gpio": null,
+          "edge": "top",
+          "status": "ok",
+          "note": "Format select bit 1",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -21.7,
+            "y": 13.75,
+            "z": 5.28
+          }
+        },
+        {
+          "id": "dac#top#2",
+          "label": "MUTE",
+          "gpio": null,
+          "edge": "top",
+          "status": "ok",
+          "note": "High = mute",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -15.7,
+            "y": 13.75,
+            "z": 5.28
+          }
+        },
+        {
+          "id": "dac#top#3",
+          "label": "SF0",
+          "gpio": null,
+          "edge": "top",
+          "status": "ok",
+          "note": "Format select bit 0",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -9.7,
+            "y": 13.75,
+            "z": 5.28
+          }
+        },
+        {
+          "id": "dac#top#4",
+          "label": "PLL",
+          "gpio": null,
+          "edge": "top",
+          "status": "ok",
+          "note": "PLL control",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -3.7,
+            "y": 13.75,
+            "z": 5.28
+          }
+        },
+        {
+          "id": "dac#top#5",
+          "label": "DEEM",
+          "gpio": null,
+          "edge": "top",
+          "status": "ok",
+          "note": "De-emphasis filter",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": 2.3,
+            "y": 13.75,
+            "z": 5.28
+          }
+        },
+        {
+          "id": "dac#bottom#0",
+          "label": "VIN",
+          "gpio": null,
+          "edge": "bottom",
+          "status": "ok",
+          "note": "3.3\u20135V power in",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -27.7,
+            "y": 13.75,
+            "z": 30.28
+          }
+        },
+        {
+          "id": "dac#bottom#1",
+          "label": "3VO",
+          "gpio": null,
+          "edge": "bottom",
+          "status": "ok",
+          "note": "Regulated 3.3V out",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -23.95,
+            "y": 13.75,
+            "z": 30.28
+          }
+        },
+        {
+          "id": "dac#bottom#2",
+          "label": "GND",
+          "gpio": null,
+          "edge": "bottom",
+          "status": "ok",
+          "note": "Ground",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -20.2,
+            "y": 13.75,
+            "z": 30.28
+          }
+        },
+        {
+          "id": "dac#bottom#3",
+          "label": "WSEL",
+          "gpio": null,
+          "edge": "bottom",
+          "status": "ok",
+          "note": "Word select / LRCLK",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -16.45,
+            "y": 13.75,
+            "z": 30.28
+          }
+        },
+        {
+          "id": "dac#bottom#4",
+          "label": "DIN",
+          "gpio": null,
+          "edge": "bottom",
+          "status": "ok",
+          "note": "Serial data in",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -12.7,
+            "y": 13.75,
+            "z": 30.28
+          }
+        },
+        {
+          "id": "dac#bottom#5",
+          "label": "BCLK",
+          "gpio": null,
+          "edge": "bottom",
+          "status": "ok",
+          "note": "Bit clock",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -8.95,
+            "y": 13.75,
+            "z": 30.28
+          }
+        },
+        {
+          "id": "dac#bottom#6",
+          "label": "LOUT",
+          "gpio": null,
+          "edge": "bottom",
+          "status": "ok",
+          "note": "Left channel out",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -5.2,
+            "y": 13.75,
+            "z": 30.28
+          }
+        },
+        {
+          "id": "dac#bottom#7",
+          "label": "AGND",
+          "gpio": null,
+          "edge": "bottom",
+          "status": "ok",
+          "note": "Analog ground",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -1.45,
+            "y": 13.75,
+            "z": 30.28
+          }
+        },
+        {
+          "id": "dac#bottom#8",
+          "label": "ROUT",
+          "gpio": null,
+          "edge": "bottom",
+          "status": "ok",
+          "note": "Right channel out",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": 2.3,
+            "y": 13.75,
+            "z": 30.28
+          }
+        }
+      ]
+    },
+    {
+      "id": "tp4056",
+      "name": "TP4056 Battery Charger & Protection Module",
+      "layer": "Bottom",
+      "boardSize": {
+        "w": 28,
+        "d": 17,
+        "h": 1.6
+      },
+      "position": {
+        "x": -88.9,
+        "y": 0,
+        "z": 35.56
+      },
+      "rotationYDeg": 0,
+      "pins": [
+        {
+          "id": "tp4056#left#0",
+          "label": "IN+",
+          "gpio": null,
+          "edge": "left",
+          "status": "unused",
+          "note": "Optional 5V input pad \u2014 not in use",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -102.9,
+            "y": 1.75,
+            "z": 30.06
+          }
+        },
+        {
+          "id": "tp4056#left#1",
+          "label": "IN-",
+          "gpio": null,
+          "edge": "left",
+          "status": "unused",
+          "note": "Optional ground input pad \u2014 not in use",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -102.9,
+            "y": 1.75,
+            "z": 41.06
+          }
+        },
+        {
+          "id": "tp4056#right#0",
+          "label": "OUT+",
+          "gpio": null,
+          "edge": "right",
+          "status": "ok",
+          "note": "Positive out to boost / system rail",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -74.9,
+            "y": 1.75,
+            "z": 30.06
+          }
+        },
+        {
+          "id": "tp4056#right#1",
+          "label": "B+",
+          "gpio": null,
+          "edge": "right",
+          "status": "ok",
+          "note": "Positive lead to LiPo battery",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -74.9,
+            "y": 1.75,
+            "z": 33.727
+          }
+        },
+        {
+          "id": "tp4056#right#2",
+          "label": "B-",
+          "gpio": null,
+          "edge": "right",
+          "status": "ok",
+          "note": "Negative lead to LiPo battery",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -74.9,
+            "y": 1.75,
+            "z": 37.393
+          }
+        },
+        {
+          "id": "tp4056#right#3",
+          "label": "OUT-",
+          "gpio": null,
+          "edge": "right",
+          "status": "ok",
+          "note": "Ground out to system ground rail",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -74.9,
+            "y": 1.75,
+            "z": 41.06
+          }
+        }
+      ]
+    },
+    {
+      "id": "battery",
+      "name": "LiPo Battery",
+      "layer": "Bottom",
+      "boardSize": {
+        "w": 40,
+        "d": 60,
+        "h": 3
+      },
+      "position": {
+        "x": -55.88,
+        "y": 0,
+        "z": -7.62
+      },
+      "rotationYDeg": 90,
+      "pins": [
+        {
+          "id": "battery#top#0",
+          "label": "B+",
+          "gpio": null,
+          "edge": "top",
+          "status": "ok",
+          "note": "Red lead, positive",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -90.38,
+            "y": 3.6,
+            "z": 4.38
+          }
+        },
+        {
+          "id": "battery#top#1",
+          "label": "B-",
+          "gpio": null,
+          "edge": "top",
+          "status": "ok",
+          "note": "Black lead, negative",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -90.38,
+            "y": 3.6,
+            "z": -19.62
+          }
+        }
+      ]
+    },
+    {
+      "id": "buttons",
+      "name": "Tactile Buttons x5",
+      "layer": "Top",
+      "boardSize": {
+        "w": 54,
+        "d": 6,
+        "h": 5
+      },
+      "position": {
+        "x": -17.78,
+        "y": 24,
+        "z": 109.22
+      },
+      "rotationYDeg": 0,
+      "pins": []
+    },
+    {
+      "id": "boost",
+      "name": "MT3608 DC-DC Step-Up Boost Converter",
+      "layer": "Flexible",
+      "boardSize": {
+        "w": 36,
+        "d": 17,
+        "h": 1.6
+      },
+      "position": {
+        "x": -83.82,
+        "y": 6,
+        "z": -48.26
+      },
+      "rotationYDeg": 0,
+      "pins": [
+        {
+          "id": "boost#left#0",
+          "label": "VOUT+",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "Positive boosted output",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -101.82,
+            "y": 7.75,
+            "z": -53.76
+          }
+        },
+        {
+          "id": "boost#left#1",
+          "label": "VOUT-",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "Output ground",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -101.82,
+            "y": 7.75,
+            "z": -42.76
+          }
+        },
+        {
+          "id": "boost#right#0",
+          "label": "VIN+",
+          "gpio": null,
+          "edge": "right",
+          "status": "ok",
+          "note": "Positive input (from TP4056 OUT+)",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -65.82,
+            "y": 7.75,
+            "z": -53.76
+          }
+        },
+        {
+          "id": "boost#right#1",
+          "label": "VIN-",
+          "gpio": null,
+          "edge": "right",
+          "status": "ok",
+          "note": "Input ground (from TP4056 OUT-)",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -65.82,
+            "y": 7.75,
+            "z": -42.76
+          }
+        }
+      ]
+    },
+    {
+      "id": "ldo",
+      "name": "AMS1117-3.3 LDO Step-Down Power Supply",
+      "layer": "Flexible",
+      "boardSize": {
+        "w": 12,
+        "d": 9,
+        "h": 1.6
+      },
+      "position": {
+        "x": -33.02,
+        "y": 6,
+        "z": -55.88
+      },
+      "rotationYDeg": 0,
+      "pins": [
+        {
+          "id": "ldo#left#0",
+          "label": "VIN",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "5V DC power input",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -41.12,
+            "y": 6.8,
+            "z": -57.38
+          }
+        },
+        {
+          "id": "ldo#left#1",
+          "label": "OUT",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "Regulated 3.3V output",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -41.12,
+            "y": 6.8,
+            "z": -55.88
+          }
+        },
+        {
+          "id": "ldo#left#2",
+          "label": "GND",
+          "gpio": null,
+          "edge": "left",
+          "status": "ok",
+          "note": "Common ground",
+          "coordinateSource": "evenly-spaced-estimate",
+          "world": {
+            "x": -41.12,
+            "y": 6.8,
+            "z": -54.38
+          }
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_1",
+      "from": {
+        "module": "battery",
+        "pin": "B+",
+        "pinId": "battery#top#0"
+      },
+      "to": {
+        "module": "tp4056",
+        "pin": "B+",
+        "pinId": "tp4056#right#1"
+      },
+      "distanceMm": 33.23,
+      "quality": "ok",
+      "netType": "PWR"
+    },
+    {
+      "id": "conn_2",
+      "from": {
+        "module": "battery",
+        "pin": "B-",
+        "pinId": "battery#top#1"
+      },
+      "to": {
+        "module": "tp4056",
+        "pin": "B-",
+        "pinId": "tp4056#right#2"
+      },
+      "distanceMm": 59.11,
+      "quality": "ok",
+      "netType": "PWR"
+    },
+    {
+      "id": "conn_3",
+      "from": {
+        "module": "ldo",
+        "pin": "GND",
+        "pinId": "ldo#left#2"
+      },
+      "to": {
+        "module": "tp4056",
+        "pin": "OUT-",
+        "pinId": "tp4056#right#3"
+      },
+      "distanceMm": 101.37,
+      "quality": "ok",
+      "netType": "PWR"
+    },
+    {
+      "id": "conn_4",
+      "from": {
+        "module": "tp4056",
+        "pin": "OUT-",
+        "pinId": "tp4056#right#3"
+      },
+      "to": {
+        "module": "boost",
+        "pin": "VIN-",
+        "pinId": "boost#right#1"
+      },
+      "distanceMm": 84.52,
+      "quality": "ok",
+      "netType": "PWR"
+    },
+    {
+      "id": "conn_5",
+      "from": {
+        "module": "tp4056",
+        "pin": "OUT-",
+        "pinId": "tp4056#right#3"
+      },
+      "to": {
+        "module": "dac",
+        "pin": "GND",
+        "pinId": "dac#bottom#2"
+      },
+      "distanceMm": 57.03,
+      "quality": "ok",
+      "netType": "PWR"
+    },
+    {
+      "id": "conn_6",
+      "from": {
+        "module": "tp4056",
+        "pin": "OUT-",
+        "pinId": "tp4056#right#3"
+      },
+      "to": {
+        "module": "tft",
+        "pin": "GND",
+        "pinId": "tft#left#6"
+      },
+      "distanceMm": 48.68,
+      "quality": "ok",
+      "netType": "PWR"
+    },
+    {
+      "id": "conn_7",
+      "from": {
+        "module": "tp4056",
+        "pin": "OUT-",
+        "pinId": "tp4056#right#3"
+      },
+      "to": {
+        "module": "esp32",
+        "pin": "GND",
+        "pinId": "esp32#left#18"
+      },
+      "distanceMm": 50.47,
+      "quality": "ok",
+      "netType": "PWR"
+    },
+    {
+      "id": "conn_8",
+      "from": {
+        "module": "tp4056",
+        "pin": "OUT+",
+        "pinId": "tp4056#right#0"
+      },
+      "to": {
+        "module": "boost",
+        "pin": "VIN+",
+        "pinId": "boost#right#0"
+      },
+      "distanceMm": 84.52,
+      "quality": "ok",
+      "netType": "PWR"
+    },
+    {
+      "id": "conn_9",
+      "from": {
+        "module": "boost",
+        "pin": "VOUT+",
+        "pinId": "boost#left#0"
+      },
+      "to": {
+        "module": "esp32",
+        "pin": "5V",
+        "pinId": "esp32#right#0"
+      },
+      "distanceMm": 74.04,
+      "quality": "ok",
+      "netType": "PWR"
+    },
+    {
+      "id": "conn_10",
+      "from": {
+        "module": "boost",
+        "pin": "VOUT+",
+        "pinId": "boost#left#0"
+      },
+      "to": {
+        "module": "ldo",
+        "pin": "VIN",
+        "pinId": "ldo#left#0"
+      },
+      "distanceMm": 60.82,
+      "quality": "ok",
+      "netType": "PWR"
+    },
+    {
+      "id": "conn_11",
+      "from": {
+        "module": "boost",
+        "pin": "VOUT-",
+        "pinId": "boost#left#1"
+      },
+      "to": {
+        "module": "boost",
+        "pin": "VIN-",
+        "pinId": "boost#right#1"
+      },
+      "distanceMm": 36,
+      "quality": "ok",
+      "netType": "PWR"
+    },
+    {
+      "id": "conn_12",
+      "from": {
+        "module": "ldo",
+        "pin": "OUT",
+        "pinId": "ldo#left#1"
+      },
+      "to": {
+        "module": "dac",
+        "pin": "VIN",
+        "pinId": "dac#bottom#0"
+      },
+      "distanceMm": 87.48,
+      "quality": "ok",
+      "netType": "PWR"
+    },
+    {
+      "id": "conn_13",
+      "from": {
+        "module": "dac",
+        "pin": "AGND",
+        "pinId": "dac#bottom#7"
+      },
+      "to": {
+        "module": "dac",
+        "pin": "GND",
+        "pinId": "dac#bottom#2"
+      },
+      "distanceMm": 18.75,
+      "quality": "ok",
+      "netType": "GND"
+    },
+    {
+      "id": "conn_14",
+      "from": {
+        "module": "dac",
+        "pin": "SCLK",
+        "pinId": "dac#top#0"
+      },
+      "to": {
+        "module": "dac",
+        "pin": "GND",
+        "pinId": "dac#bottom#2"
+      },
+      "distanceMm": 26.1,
+      "quality": "ok",
+      "netType": "SIGNAL"
+    },
+    {
+      "id": "conn_15",
+      "from": {
+        "module": "tft",
+        "pin": "LED",
+        "pinId": "tft#left#0"
+      },
+      "to": {
+        "module": "tft",
+        "pin": "VCC",
+        "pinId": "tft#left#7"
+      },
+      "distanceMm": 52,
+      "quality": "ok",
+      "netType": "PWR"
+    },
+    {
+      "id": "conn_16",
+      "from": {
+        "module": "tft",
+        "pin": "VCC",
+        "pinId": "tft#left#7"
+      },
+      "to": {
+        "module": "esp32",
+        "pin": "3V3",
+        "pinId": "esp32#right#18"
+      },
+      "distanceMm": 34.03,
+      "quality": "ok",
+      "netType": "PWR"
+    },
+    {
+      "id": "conn_17",
+      "from": {
+        "module": "dac",
+        "pin": "WSEL",
+        "pinId": "dac#bottom#3"
+      },
+      "to": {
+        "module": "esp32",
+        "pin": "P25",
+        "pinId": "esp32#right#10"
+      },
+      "distanceMm": 44,
+      "quality": "ok",
+      "netType": "SIGNAL"
+    },
+    {
+      "id": "conn_18",
+      "from": {
+        "module": "dac",
+        "pin": "DIN",
+        "pinId": "dac#bottom#4"
+      },
+      "to": {
+        "module": "esp32",
+        "pin": "P27",
+        "pinId": "esp32#right#8"
+      },
+      "distanceMm": 47.59,
+      "quality": "ok",
+      "netType": "SIGNAL"
+    },
+    {
+      "id": "conn_19",
+      "from": {
+        "module": "dac",
+        "pin": "BCLK",
+        "pinId": "dac#bottom#5"
+      },
+      "to": {
+        "module": "esp32",
+        "pin": "P26",
+        "pinId": "esp32#right#9"
+      },
+      "distanceMm": 51.32,
+      "quality": "ok",
+      "netType": "SIGNAL"
+    },
+    {
+      "id": "conn_20",
+      "from": {
+        "module": "tft",
+        "pin": "CS",
+        "pinId": "tft#left#5"
+      },
+      "to": {
+        "module": "esp32",
+        "pin": "P22",
+        "pinId": "esp32#left#16"
+      },
+      "distanceMm": 23.94,
+      "quality": "ok",
+      "netType": "SIGNAL"
+    },
+    {
+      "id": "conn_21",
+      "from": {
+        "module": "tft",
+        "pin": "RESET",
+        "pinId": "tft#left#4"
+      },
+      "to": {
+        "module": "esp32",
+        "pin": "P17",
+        "pinId": "esp32#left#8"
+      },
+      "distanceMm": 31.42,
+      "quality": "ok",
+      "netType": "SIGNAL"
+    },
+    {
+      "id": "conn_22",
+      "from": {
+        "module": "tft",
+        "pin": "A0",
+        "pinId": "tft#left#3"
+      },
+      "to": {
+        "module": "esp32",
+        "pin": "P21",
+        "pinId": "esp32#left#13"
+      },
+      "distanceMm": 40.81,
+      "quality": "ok",
+      "netType": "SIGNAL"
+    },
+    {
+      "id": "conn_23",
+      "from": {
+        "module": "tft",
+        "pin": "SDA",
+        "pinId": "tft#left#2"
+      },
+      "to": {
+        "module": "esp32",
+        "pin": "P23",
+        "pinId": "esp32#left#17"
+      },
+      "distanceMm": 49.55,
+      "quality": "ok",
+      "netType": "SIGNAL"
+    },
+    {
+      "id": "conn_24",
+      "from": {
+        "module": "tft",
+        "pin": "SCK",
+        "pinId": "tft#left#1"
+      },
+      "to": {
+        "module": "esp32",
+        "pin": "P18",
+        "pinId": "esp32#left#10"
+      },
+      "distanceMm": 57.25,
+      "quality": "ok",
+      "netType": "SIGNAL"
+    },
+    {
+      "id": "conn_25",
+      "from": {
+        "module": "tft",
+        "pin": "SD_SCK",
+        "pinId": "tft#right#3"
+      },
+      "to": {
+        "module": "esp32",
+        "pin": "P18",
+        "pinId": "esp32#left#10"
+      },
+      "distanceMm": 12.43,
+      "quality": "ok",
+      "netType": "SIGNAL"
+    },
+    {
+      "id": "conn_26",
+      "from": {
+        "module": "tft",
+        "pin": "SD_MISO",
+        "pinId": "tft#right#2"
+      },
+      "to": {
+        "module": "esp32",
+        "pin": "P19",
+        "pinId": "esp32#left#11"
+      },
+      "distanceMm": 25.7,
+      "quality": "ok",
+      "netType": "SIGNAL"
+    },
+    {
+      "id": "conn_27",
+      "from": {
+        "module": "tft",
+        "pin": "SD_MOSI",
+        "pinId": "tft#right#1"
+      },
+      "to": {
+        "module": "esp32",
+        "pin": "P23",
+        "pinId": "esp32#left#17"
+      },
+      "distanceMm": 42.19,
+      "quality": "ok",
+      "netType": "SIGNAL"
+    },
+    {
+      "id": "conn_28",
+      "from": {
+        "module": "tft",
+        "pin": "SD_CS",
+        "pinId": "tft#right#0"
+      },
+      "to": {
+        "module": "esp32",
+        "pin": "P5",
+        "pinId": "esp32#left#9"
+      },
+      "distanceMm": 59.28,
+      "quality": "ok",
+      "netType": "SIGNAL"
+    }
+  ]
+}
