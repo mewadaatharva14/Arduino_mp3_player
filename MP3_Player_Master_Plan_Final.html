@@ -13,13 +13,20 @@
         th { background-color: #f8f9fa; font-weight: bold; }
         .highlight { background-color: #e8f4f8; }
         pre { background-color: #282c34; color: #abb2bf; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 14px; }
-        .btn { display: inline-block; background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; }
+        .vision-text { font-size: 1.1em; color: #555; font-style: italic; border-left: 4px solid #3498db; padding-left: 15px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
     <h1>ESP32 MP3 Player - Final Master Plan V3</h1>
-    <p>This document contains your finalized pinout map and the complete Arduino codebase based on the physical layout you designed.</p>
+    
+    <div class="card">
+        <h2>The Vision</h2>
+        <div class="vision-text">
+            A pocket-sized, battery-powered music player you build yourself — completely offline, plays only your own local files, no subscriptions, no Bluetooth, no internet dependency. Once music is on the SD card, the whole thing works standalone forever. Designed to be genuinely pocket-portable, navigated purely by physical tactile buttons, and outputting pure analog audio through a dedicated 3.5mm headphone jack.
+        </div>
+        <p>This document contains your finalized pinout map and the complete Arduino codebase based on the physical layout designed to make this vision a reality.</p>
+    </div>
 
     <div class="card">
         <h2>1. Power Subsystem Wiring</h2>
